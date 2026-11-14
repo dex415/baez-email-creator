@@ -82,15 +82,15 @@ book (`UG_BRANDBOOK.pdf`) and the collab colour sheet:
 |---|---|
 | Palette: black `#000000`, grey `#737373`, white `#F1F1F1` | canvas + card black, labels grey, text white |
 | `#65C128` main colour | Shop button, campaign tag, links, outline buttons |
-| `#39FF14` highlights / lighting | channel line under the lockup + the glow on it and on the Shop button |
+| `#39FF14` highlights / lighting | channel line under the lockup, with a soft glow on that text |
 | `#194D13` depth | card border, hairlines, bar and well borders |
 | Acumin Pro for text and pieces | first in the font stack (see below) |
 | Sustained capitals, tracking 50–100 | everything uppercase, letter-spacing held between 0.05em and 0.10em |
 | Bold + regular pairing in headings | collection name bold, status line regular |
 | Square, technical layouts | all corner radii 0 |
 
-Glows are `text-shadow` / `box-shadow`; inboxes that drop them just show the
-flat colour. Bahnschrift (the guide's secondary face, for the logo) is not
+The glow is a `text-shadow`; inboxes that drop it just show the flat colour.
+The button has no glow. Bahnschrift (the guide's secondary face, for the logo) is not
 used: the logo should go in as an image.
 
 ## Brand font (Acumin Pro)
@@ -136,6 +136,13 @@ The card table carries `width:100%; max-width:520px; margin:0 auto`. The
 `margin:0 auto` is load-bearing — a width:100% table with a max-width is a block
 box and `<td align="center">` does NOT centre it. Without it Shopify renders the
 card flush left. Card padding lives on a `<td>`, never on the width:100% table.
+
+**Never use `colspan`.** On a real test send (Nov 2026) every footer cell that
+was meant to span two columns rendered in the first column only — the picture
+you get when `colspan` is removed from the markup. Nothing this tool emits uses
+`colspan` or `rowspan` any more: a full-width row is its own row, and a
+multi-column row is its own nested table. Widths in the socials footer are set
+as attributes and as CSS for the same reason.
 
 ## What does and doesn't export
 
