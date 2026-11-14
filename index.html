@@ -133,6 +133,9 @@
   #lintbar strong{color:#fbbf24}
   .lhelp{font-size:10px;color:var(--faint);line-height:1.5;margin:-2px 0 8px}
   .fld .rhelp{display:block;font-style:normal;font-size:10px;color:var(--faint);line-height:1.5;margin-top:4px}
+  .fview{display:none;height:28px;padding:0 11px;background:transparent;border:1px solid var(--hair);border-radius:6px;color:var(--muted);font-size:11px;font-weight:600}
+  .fview.on{display:inline-block}
+  .fview.fb{color:#fbbf24;border-color:#5a4a12}
 
   .empty{padding:26px 12px;text-align:center;font-size:12px;color:var(--faint);line-height:1.7;border:1px dashed var(--hair);border-radius:9px}
   .empty.sm{padding:14px}
@@ -197,6 +200,8 @@
       </details>
 
       <label class="fld"><span>Email language</span><select id="lang"><option value="en">English</option><option value="es">Español</option></select><em class="rhelp">Switches the built-in labels. Starter copy you haven’t edited flips too; anything you typed stays as typed.</em></label>
+      <label class="fld"><span>Brand look</span><select id="theme"></select><em class="rhelp">Restyles the same blocks. UNDERGOLD × BAEZ follows the Undergold brand book and the collab colour sheet: three greens on black, Acumin Pro, capitals with 50–100 tracking, square corners.</em></label>
+      <label class="fld" id="fontrow" style="display:none"><span>Adobe Fonts web project ID</span><input id="fontkit" type="text" placeholder="abc1def — or paste the embed code"><em class="rhelp">Optional. Loads Acumin Pro from Adobe Fonts in inboxes that support web fonts (Apple Mail, iOS Mail). Gmail and Outlook always show the Helvetica / Arial fallback. Blank = fallback everywhere.</em></label>
       <label class="fld"><span>Campaign tag</span><input id="eyebrow" type="text" placeholder="NEW DROP"></label>
       <div class="two">
         <label class="fld"><span>Tag alignment</span><select id="tagalign"><option>left</option><option selected>center</option><option>right</option></select></label>
@@ -217,6 +222,7 @@
       <button class="vtab on" data-view="desktop">Desktop</button>
       <button class="vtab" data-view="mobile">Mobile</button>
       <button class="vtab" data-view="code">Code</button>
+      <button class="fview" id="fontview" title="Most inboxes (Gmail, Outlook) never load a web font. Switch to see what they show."></button>
       <div class="spacer"></div>
       <span id="sizehint"></span>
     </div>
@@ -304,8 +310,106 @@ const TK = {
   amberRule: '#eab308',
   amberHead: '#fbbf24',
   amberText: '#e8d4a0',
+  /* tokens a brand look may override (defaults = the BAEZ look) */
+  accent: BRAND.accent,        // channel line under the lockup
+  accentGlow: '',
+  tagColor: '#888',            // campaign tag
+  statusWeight: 800,           // lockup status line
+  ctaBg: '#fff', ctaText: '#000', ctaGlow: '',
+  btnBorder: '#3f3f46',
+  cardBorder: '',
+  noteLead: '#999',            // bold lead-in of the pre-order fine print
   width: 520
 };
+const TK_BASE = Object.assign({}, TK);
+
+/* ---------- BRAND LOOKS ----------
+   A look restyles the same blocks: colours, font stack and type rules. The
+   block markup itself never changes, so the Shopify layout rules still hold.
+
+   ugbz — UNDERGOLD × BAEZ collaboration, from the Undergold brand book and
+   the collab colour sheet:
+     · palette  black #000, grey #737373, white #F1F1F1
+     · greens   #65C128 main, #39FF14 highlights / glow, #194D13 depth
+     · type     Acumin Pro, sustained capitals, tracking 50–100 (0.05–0.10em),
+                bold + regular pairing in headings
+     · shapes   square corners */
+const THEMES = {
+  baez: { label: 'BAEZ', brandLine: BRAND.name, tokens: {} },
+  ugbz: {
+    label: 'UNDERGOLD × BAEZ',
+    brandLine: 'UNDERGOLD × BAEZ',
+    brandFont: 'Acumin Pro',
+    caps: true,
+    track: [0.05, 0.10],
+    square: true,
+    tokens: {
+      /* acumin-pro is the family name an Adobe Fonts web project serves;
+         'Acumin Pro' matches a copy installed on the reader's device */
+      font: "acumin-pro,'Acumin Pro','Helvetica Neue',Helvetica,Arial,sans-serif",
+      card: '#000', cardBorder: '#194D13',
+      well: '#000', rule: '#194D13', hair: '#194D13',
+      white: '#F1F1F1', text: '#F1F1F1', body: '#F1F1F1', muted: '#737373', faint: '#737373',
+      link: '#65C128', green: '#65C128',
+      amberBg: '#000', amberRule: '#65C128', amberHead: '#39FF14', amberText: '#F1F1F1',
+      accent: '#39FF14', accentGlow: 'text-shadow:0 0 12px rgba(57,255,20,.6);',
+      tagColor: '#65C128', statusWeight: 400,
+      ctaBg: '#65C128', ctaText: '#000', ctaGlow: 'box-shadow:0 0 24px rgba(57,255,20,.4);',
+      btnBorder: '#65C128', noteLead: '#F1F1F1'
+    }
+  }
+};
+const themeKey = (s) => (s && THEMES[s.theme]) ? s.theme : 'baez';
+const themeOf = (s) => THEMES[themeKey(s)];
+function useTheme(th) {
+  Object.keys(TK).forEach(k => { delete TK[k]; });
+  Object.assign(TK, TK_BASE, th.tokens);
+}
+
+/* '#111' -> '#111111' for bgcolor attributes */
+const hex6 = (h) => { const x = String(h).replace('#', ''); return '#' + (x.length === 3 ? x.replace(/./g, c => c + c) : x).toLowerCase(); };
+
+/* Accepts a bare Adobe Fonts web-project ID or the whole embed code / URL. */
+function kitId(v) {
+  const s = String(v || '').trim();
+  const m = s.match(/use\.typekit\.net\/([a-z0-9]{5,10})\.(?:css|js)/i) || s.match(/^([a-z0-9]{5,10})$/i);
+  return m ? m[1].toLowerCase() : '';
+}
+
+/* Type + shape rules of a look, applied to the finished markup. Every style is
+   inline and generated here, so this is a plain rewrite of our own output:
+   · square  -> all corner radii to 0
+   · track   -> every element that sets a font-size gets letter-spacing inside
+                [min,max] em (children without their own size inherit it) */
+function themeTransform(html, th) {
+  if (!th.square && !th.track) return html;
+  return html.replace(/style="([^"]*)"/g, (m, css) => {
+    let out = css;
+    if (th.square) out = out.replace(/border-radius:\s*[\d.]+px/g, 'border-radius:0');
+    if (th.track) {
+      const fs = /(?:^|;)\s*font-size:\s*([\d.]+)px/.exec(out);
+      const size = fs ? parseFloat(fs[1]) : 0;
+      if (size > 0) {
+        const cur = /(?:^|;)\s*letter-spacing:\s*(-?[\d.]+)px/.exec(out);
+        const have = cur ? parseFloat(cur[1]) : 0;
+        const want = Math.min(Math.max(have, size * th.track[0]), size * th.track[1]);
+        const val = 'letter-spacing:' + (Math.round(want * 100) / 100) + 'px';
+        out = cur ? out.replace(/letter-spacing:\s*-?[\d.]+px/, val)
+                  : out.replace(/;?\s*$/, ';' + val + ';');
+      }
+    }
+    return 'style="' + out + '"';
+  });
+}
+
+/* Changing the look also swaps the lockup's brand line, if it was never edited. */
+function switchTheme(tpl, toKey) {
+  const from = themeOf(tpl.settings), to = THEMES[toKey] || THEMES.baez;
+  tpl.settings.theme = THEMES[toKey] ? toKey : 'baez';
+  (tpl.blocks || []).forEach(b => {
+    if (b.type === 'lockup' && b.values && b.values.brand === from.brandLine) b.values.brand = to.brandLine;
+  });
+}
 
 /* ---------- EN / ES ----------
    L(en, es) marks default copy that exists in both languages. Switching the
@@ -425,13 +529,13 @@ const A = {
 
   /* 56px bordered button */
   button: (text, url) =>
-    '<a href="' + esc(url || '#') + '" style="display:block;height:56px;box-sizing:border-box;text-align:center;background:' + TK.well + ';border:1px solid ' + TK.rule + ';border-radius:8px;color:' + TK.white + ';font-size:12px;font-weight:700;text-decoration:none;">' +
+    '<a href="' + esc(url || '#') + '" style="display:block;height:56px;box-sizing:border-box;text-align:center;background:' + TK.well + ';border:1px solid ' + TK.btnBorder + ';border-radius:8px;color:' + TK.white + ';font-size:12px;font-weight:700;text-decoration:none;">' +
     '<span style="display:inline-block;height:100%;vertical-align:middle;"></span>' +
     '<span style="display:inline-block;vertical-align:middle;line-height:1.25;padding:0 6px;">' + text + '</span></a>',
 
   /* Inverted / solid button for primary marketing CTAs */
   buttonSolid: (text, url) =>
-    '<a href="' + esc(url || '#') + '" style="display:block;height:56px;box-sizing:border-box;text-align:center;background:' + TK.white + ';border:1px solid ' + TK.white + ';border-radius:8px;color:#000;font-size:12px;font-weight:700;letter-spacing:0.5px;text-decoration:none;">' +
+    '<a href="' + esc(url || '#') + '" style="display:block;height:56px;box-sizing:border-box;text-align:center;background:' + TK.ctaBg + ';border:1px solid ' + TK.ctaBg + ';border-radius:8px;color:' + TK.ctaText + ';font-size:12px;font-weight:700;letter-spacing:0.5px;text-decoration:none;' + TK.ctaGlow + '">' +
     '<span style="display:inline-block;height:100%;vertical-align:middle;"></span>' +
     '<span style="display:inline-block;vertical-align:middle;line-height:1.25;padding:0 6px;">' + text + '</span></a>'
 };
@@ -471,8 +575,8 @@ const BLOCKS = [
   render: (v) =>
     row((v.brand ? '<div style="font-size:15px;color:' + TK.white + ';font-weight:800;letter-spacing:.5px;line-height:1.3;">' + esc(v.brand) + '</div>' : '') +
       (v.collection ? '<div style="font-size:19px;color:' + TK.white + ';font-weight:800;letter-spacing:.5px;line-height:1.25;margin-top:2px;">' + nl2br(v.collection) + '</div>' : '') +
-      (v.status ? '<div style="font-size:19px;color:' + TK.white + ';font-weight:800;letter-spacing:.5px;line-height:1.25;">' + esc(v.status) + '</div>' : '') +
-      (v.channel ? '<div style="font-size:12px;color:' + BRAND.accent + ';font-weight:800;letter-spacing:1px;margin-top:6px;">' + esc(v.channel) + '</div>' : ''),
+      (v.status ? '<div style="font-size:19px;color:' + TK.white + ';font-weight:' + TK.statusWeight + ';letter-spacing:.5px;line-height:1.25;">' + esc(v.status) + '</div>' : '') +
+      (v.channel ? '<div style="font-size:12px;color:' + TK.accent + ';font-weight:800;letter-spacing:1px;margin-top:6px;' + TK.accentGlow + '">' + esc(v.channel) + '</div>' : ''),
       'padding-top:18px;', 'center')
 },
 {
@@ -613,7 +717,7 @@ const BLOCKS = [
     else if (v.shipText) r += pair(tr(UI.ships, c), esc(v.shipText));
 
     if (pre) r += '<div style="font-size:11px;color:' + TK.faint + ';line-height:1.6;margin-top:14px;">' +
-      '<strong style="color:#999;">' + tr(UI.noteLead, c) + '</strong> ' + tr(UI.preorderNote, c) + '</div>';
+      '<strong style="color:' + TK.noteLead + ';">' + tr(UI.noteLead, c) + '</strong> ' + tr(UI.preorderNote, c) + '</div>';
 
     return row('<div style="font-size:11px;color:' + TK.muted + ';font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">' +
       esc(v.label) + '</div>' + r, 'padding:18px 0 4px;', 'center');
@@ -906,9 +1010,14 @@ BLOCKS.forEach(b => { BLOCK_BY_ID[b.id] = b; });
 /* ---------- pre-send checks ----------
    Things that should never reach a customer list: empty image slots and
    starter placeholders that were never replaced. */
-function lint(tpl) {
+const LIQUID_LIMIT_KB = 50;   // Shopify's cap for one Custom Liquid section
+function lint(tpl, body) {
   const out = [];
   const isAny = (val, p) => val === p.en || val === p.es;
+  const s = tpl.settings || {};
+  const kb = new Blob([body == null ? buildBody(tpl) : body]).size / 1024;
+  if (kb > LIQUID_LIMIT_KB) out.push('Liquid is ' + kb.toFixed(1) + ' KB — Shopify allows ' + LIQUID_LIMIT_KB + ' KB per Custom Liquid section');
+  if (themeOf(s).brandFont && s.fontKit && !kitId(s.fontKit)) out.push('Adobe Fonts project ID is not a valid ID or embed code');
   (tpl.blocks || []).forEach(b => {
     const v = b.values || {};
     if (b.type === 'image' && !v.src) out.push('Image has no URL');
@@ -955,7 +1064,7 @@ const blockMargin = (al) =>
   al === 'right' ? 'margin:0 0 0 auto;' : al === 'left' ? 'margin:0;' : 'margin:0 auto;';
 
 const tagDiv = (text, al) =>
-  '<div style="font-size:12px;color:' + TK.muted +
+  '<div style="font-size:12px;color:' + TK.tagColor +
   ';font-weight:700;letter-spacing:1.6px;text-transform:uppercase;text-align:' + al + ';">' +
   esc(text) + '</div>';
 
@@ -989,17 +1098,25 @@ function renderTag(s) {
    between Shopify's own header and footer. */
 function buildBody(tpl) {
   const s = tpl.settings || {};
+  const th = themeOf(s);
+  useTheme(th);
   const ctx = { lang: s.lang === 'es' ? 'es' : 'en' };
+  /* Brand font: Adobe Fonts only licenses web fonts for email through its own
+     embed code, so the font is pulled from the web project, never self-hosted.
+     Apple Mail / iOS Mail load it; Gmail and Outlook show the fallback stack. */
+  const kit = th.brandFont ? kitId(s.fontKit) : '';
+  const fontCss = kit ? '<style>@import url("https://use.typekit.net/' + kit + '.css");</style>\n' : '';
   const rows = (tpl.blocks || []).map(b => {
     const def = BLOCK_BY_ID[b.type];
     return def ? def.render(b.values || {}, ctx) : '';
   }).join('\n      ');
 
-  return '<!-- ============================================================= -->\n' +
-    '<!-- ' + BRAND.name + ' — ' + esc(tpl.name || 'Marketing Email').replace(/-{2,}/g, '-') + ' -->\n' +
+  const html = '<!-- ============================================================= -->\n' +
+    '<!-- ' + th.brandLine + ' — ' + esc(tpl.name || 'Marketing Email').replace(/-{2,}/g, '-') + ' -->\n' +
     '<!-- Paste into Shopify Messaging → Add section → Custom → Custom Liquid -->\n' +
     '<!-- Shopify renders the logo band above and the unsubscribe footer below. -->\n' +
     '<!-- ============================================================= -->\n' +
+    fontCss +
     /* margin:0 auto is what actually centres the card. A table with width:100% +
        max-width is a block box: <td align="center"> does NOT centre it, and Shopify
        renders it flush left without this. Padding lives on a td, never on the
@@ -1007,8 +1124,8 @@ function buildBody(tpl) {
     '<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" align="center" style="width:100%;background:' + TK.canvas + ';font-family:' + TK.font + ';">\n' +
     '  ' + renderHeader(s) + '\n' +
     '  <tr><td align="center" style="padding:' + (s.showHeader ? '0' : '28px') + ' 20px 48px;">\n' +
-    '    <table width="100%" cellpadding="0" cellspacing="0" align="center" bgcolor="#111111" style="width:100%;max-width:' + TK.width + 'px;margin:0 auto;background:' + TK.card + ';border-radius:14px;font-family:' + TK.font + ';">\n' +
-    '      <tr><td style="padding:30px 34px;' + (s.align === 'left' ? '' : 'text-align:center;') + '">\n' +
+    '    <table width="100%" cellpadding="0" cellspacing="0" align="center" bgcolor="' + hex6(TK.card) + '" style="width:100%;max-width:' + TK.width + 'px;margin:0 auto;background:' + TK.card + ';border-radius:14px;' + (TK.cardBorder ? 'border:1px solid ' + TK.cardBorder + ';' : '') + 'font-family:' + TK.font + ';">\n' +
+    '      <tr><td style="padding:30px 34px;' + (s.align === 'left' ? '' : 'text-align:center;') + (th.caps ? 'text-transform:uppercase;' : '') + '">\n' +
     '        <table width="100%" cellpadding="0" cellspacing="0">\n' +
     '      ' + renderTag(s) + '\n      ' + rows + '\n' +
     '        </table>\n' +
@@ -1016,6 +1133,7 @@ function buildBody(tpl) {
     '    </table>\n' +
     '  </td></tr>\n' +
     '</table>';
+  return themeTransform(html, th);
 }
 
 /* Full standalone document — used for the preview pane and .html export */
@@ -1041,6 +1159,8 @@ function buildFull(tpl) {
 const CFG_KEY = 'bz_ec_supabase';
 const LOCAL_KEY = 'bz_ec_templates';
 const LANG_KEY = 'bz_ec_lang';
+const THEME_KEY = 'bz_ec_theme';
+const KIT_KEY = 'bz_ec_fontkit';
 const TABLE = 'bz_email_templates';
 
 const Store = {
@@ -1100,7 +1220,14 @@ function curLang() {
   try { return localStorage.getItem(LANG_KEY) === 'es' ? 'es' : 'en'; } catch (e) { return 'en'; }
 }
 
-function mkBlock(type, overrides, lang) {
+/* The look new templates and blocks are created in: the open template's, else the last one used. */
+function curThemeKey() {
+  if (tpl && tpl.settings) return themeKey(tpl.settings);
+  try { return themeKey({ theme: localStorage.getItem(THEME_KEY) }); } catch (e) { return 'baez'; }
+}
+function storedKit() { try { return localStorage.getItem(KIT_KEY) || ''; } catch (e) { return ''; } }
+
+function mkBlock(type, overrides, lang, theme) {
   const def = BLOCK_BY_ID[type];
   const lg = lang || curLang();
   const values = {};
@@ -1108,34 +1235,37 @@ function mkBlock(type, overrides, lang) {
     const d = loc(f.def, lg);
     values[f.key] = (f.type === 'list') ? JSON.parse(JSON.stringify(d || [])) : d;
   });
+  if (type === 'lockup') values.brand = (THEMES[theme] || THEMES[curThemeKey()]).brandLine;
   Object.assign(values, loc(overrides || {}, lg));
   return { id: bid(), type: type, values: values };
 }
 
-const baseSettings = (lang, extra) => Object.assign({
-  lang: lang, showHeader: false, eyebrow: '', logoUrl: BRAND.shopUrl, align: 'center',
+const baseSettings = (lang, theme, extra) => Object.assign({
+  lang: lang, theme: theme, fontKit: storedKit(), showHeader: false, eyebrow: '', logoUrl: BRAND.shopUrl, align: 'center',
   showTag: true, tagAlign: 'center', logoAlign: 'center', subject: '', preheader: ''
 }, extra || {});
 
 /* Mirrors the drop email as it is actually sent: tag, lockup, hero, one CTA,
    drop details. Announcement Bar, Product Grid and Footer Grid are one click away. */
-function starterDrop(lang) {
+function starterDrop(lang, theme) {
+  theme = THEMES[theme] ? theme : curThemeKey();
   return {
     id: uid(), name: loc(STR.dropName, lang), kind: 'drop',
-    settings: baseSettings(lang, { eyebrow: loc(STR.newDrop, lang), subject: loc(STR.dropSubject, lang) }),
+    settings: baseSettings(lang, theme, { eyebrow: loc(STR.newDrop, lang), subject: loc(STR.dropSubject, lang) }),
     blocks: [
-      mkBlock('lockup', {}, lang),
-      mkBlock('image', { alt: STR.heroAlt }, lang),
-      mkBlock('button', {}, lang),
-      mkBlock('dropdetails', { status: 'Hide this row' }, lang)
+      mkBlock('lockup', {}, lang, theme),
+      mkBlock('image', { alt: STR.heroAlt }, lang, theme),
+      mkBlock('button', {}, lang, theme),
+      mkBlock('dropdetails', { status: 'Hide this row' }, lang, theme)
     ]
   };
 }
 
-function starterSale(lang) {
+function starterSale(lang, theme) {
+  theme = THEMES[theme] ? theme : curThemeKey();
   return {
     id: uid(), name: loc(STR.saleName, lang), kind: 'sale',
-    settings: baseSettings(lang, { eyebrow: loc(STR.limited, lang), subject: loc(STR.saleSubject, lang) }),
+    settings: baseSettings(lang, theme, { eyebrow: loc(STR.limited, lang), subject: loc(STR.saleSubject, lang) }),
     blocks: [
       mkBlock('headline', { eyebrow: '', title: STR.saleTitle, body: STR.saleBody }, lang),
       mkBlock('code', {}, lang),
@@ -1147,10 +1277,11 @@ function starterSale(lang) {
   };
 }
 
-function starterBlank(lang) {
+function starterBlank(lang, theme) {
+  theme = THEMES[theme] ? theme : curThemeKey();
   return {
     id: uid(), name: loc(STR.blankName, lang), kind: 'custom',
-    settings: baseSettings(lang),
+    settings: baseSettings(lang, theme),
     blocks: [mkBlock('headline', {}, lang), mkBlock('button', {}, lang), mkBlock('footer', {}, lang)]
   };
 }
@@ -1261,6 +1392,7 @@ function renderList(b, f, arr) {
 
 /* ---------------- preview ---------------- */
 let previewTimer = null;
+let previewFallback = false;   // preview only — never changes the exported Liquid
 function renderPreview() {
   clearTimeout(previewTimer);
   previewTimer = setTimeout(() => {
@@ -1268,7 +1400,16 @@ function renderPreview() {
     const body = buildBody(tpl);
     $('#codeout').textContent = body;
     $('#sizehint').textContent = (new Blob([body]).size / 1024).toFixed(1) + ' KB';
-    const issues = lint(tpl);
+    /* Brand-font looks: let the preview show what inboxes without web fonts get. */
+    const fv = $('#fontview'), th = themeOf(tpl.settings);
+    fv.className = 'fview' + (th.brandFont ? ' on' : '') + (previewFallback ? ' fb' : '');
+    fv.textContent = previewFallback ? 'Font: fallback (Gmail / Outlook)' : 'Font: ' + (th.brandFont || '');
+    if (th.brandFont && previewFallback) {
+      $('#frame').srcdoc = buildFull(tpl)
+        .replace(/<style>@import[^<]*<\/style>\n?/, '')
+        .split("acumin-pro,'Acumin Pro',").join('');
+    }
+    const issues = lint(tpl, body);
     const bar = $('#lintbar');
     bar.className = issues.length ? 'on' : '';
     bar.innerHTML = issues.length
@@ -1281,6 +1422,9 @@ function renderPreview() {
 function renderMeta() {
   $('#tplname').value = tpl.name || '';
   $('#lang').value = tpl.settings.lang === 'es' ? 'es' : 'en';
+  $('#theme').value = themeKey(tpl.settings);
+  $('#fontkit').value = tpl.settings.fontKit || '';
+  $('#fontrow').style.display = themeOf(tpl.settings).brandFont ? 'block' : 'none';
   $('#eyebrow').value = (tpl.settings && tpl.settings.eyebrow) || '';
   $('#subject').value = (tpl.settings && tpl.settings.subject) || '';
   $('#preheader').value = (tpl.settings && tpl.settings.preheader) || '';
@@ -1411,6 +1555,11 @@ document.addEventListener('input', (e) => {
   if (el.id === 'eyebrow') { tpl.settings.eyebrow = el.value; renderPreview(); return; }
   if (el.id === 'aligncenter') { tpl.settings.align = el.checked ? 'center' : 'left'; renderPreview(); return; }
   if (el.id === 'subject') { tpl.settings.subject = el.value; return; }
+  if (el.id === 'fontkit') {
+    tpl.settings.fontKit = el.value.trim();
+    try { localStorage.setItem(KIT_KEY, kitId(el.value) ? el.value.trim() : ''); } catch (err) { /* private mode */ }
+    renderPreview(); return;
+  }
   if (el.id === 'preheader') { tpl.settings.preheader = el.value; return; }
 });
 
@@ -1420,6 +1569,13 @@ document.addEventListener('change', (e) => {
     tpl.settings.lang = to;
     try { localStorage.setItem(LANG_KEY, to); } catch (err) { /* private mode */ }
     translateDefaults(tpl, from, to);
+    renderAll();
+    return;
+  }
+  if (e.target.id === 'theme') {
+    switchTheme(tpl, e.target.value);
+    try { localStorage.setItem(THEME_KEY, tpl.settings.theme); } catch (err) { /* private mode */ }
+    if (themeOf(tpl.settings).brandFont && !tpl.settings.fontKit) tpl.settings.fontKit = storedKit();
     renderAll();
     return;
   }
@@ -1515,7 +1671,7 @@ function bindToolbar() {
 
   $('#copy').onclick = async () => {
     const body = buildBody(tpl);
-    const left = lint(tpl).length;
+    const left = lint(tpl, body).length;
     const msg = left ? 'Liquid copied — ' + left + ' thing' + (left > 1 ? 's' : '') + ' still to fix before sending'
                      : 'Liquid copied — paste into Shopify Messaging';
     try { await navigator.clipboard.writeText(body); toast(msg, !!left); }
@@ -1537,6 +1693,7 @@ function bindToolbar() {
     $('#frame').style.maxWidth = v === 'mobile' ? '390px' : '100%';
   });
 
+  $('#fontview').onclick = () => { previewFallback = !previewFallback; renderPreview(); };
   $('#howto').onclick = () => $('#howmodal').classList.add('on');
   $('#how-close').onclick = () => $('#howmodal').classList.remove('on');
 
@@ -1566,6 +1723,7 @@ function download(name, text) {
 $('#brandmark').innerHTML = BRAND.logo
   ? '<img src="' + BRAND.logo + '" alt="">'
   : '<span class="mark">BZ</span>';
+$('#theme').innerHTML = Object.keys(THEMES).map(k => '<option value="' + k + '">' + THEMES[k].label + '</option>').join('');
 renderPalette();
 bindToolbar();
 bindDrag();

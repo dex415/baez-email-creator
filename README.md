@@ -10,19 +10,22 @@ on GitHub Pages with `bash deploy.sh`.
 ## Where this came from
 
 A fork of the TWNTY-TWO® Email Creator (`dex415/twntytwo-email-creator`). The
-email markup each block emits is the same — for identical content the two tools
-produce identical HTML — so a layout fix in one can be copied to the other.
+email markup each block emits is the same, so a layout fix in one can be
+copied to the other.
 What is different here:
 
 | | TWNTY-TWO | BAEZ |
 |---|---|---|
 | Brand config | scattered defaults | one `BRAND` block at the top of the script |
 | Language | English only | **English / Español** per template |
+| Brand look | one | **BAEZ** or **UNDERGOLD × BAEZ** per template |
 | Drop starter | bar, lockup, hero, CTA, details, grid, footer | tag, lockup, hero, CTA, details |
 | Footer Grid | four fixed buttons with icon assets | editable button list, text only |
 | Empty image | broken image | dashed placeholder + warning |
 | Pre-send checks | none | warning strip above the preview |
 | Storage keys | `tt_ec_*`, table `tt_email_templates` | `bz_ec_*`, table `bz_email_templates` |
+
+For identical content in the BAEZ look the two tools still emit identical HTML.
 
 ## Brand settings
 
@@ -31,6 +34,53 @@ Everything BAEZ-specific is the `BRAND` object near the top of the first
 URLs, logo URL and the accent colour. A link left empty is simply left out of
 the email (for example the Instagram and Subscribe footer buttons), so nothing
 dead ships. This repo is public — URLs only, never keys.
+
+## Brand looks
+
+`Brand look` in the Email panel restyles the same blocks; the markup and the
+Shopify layout rules do not change. New templates start in the last look used.
+
+**BAEZ** — the default dark card.
+
+**UNDERGOLD × BAEZ** — the collaboration look, taken from the Undergold brand
+book (`UG_BRANDBOOK.pdf`) and the collab colour sheet:
+
+| Rule in the guide | In the email |
+|---|---|
+| Palette: black `#000000`, grey `#737373`, white `#F1F1F1` | canvas + card black, labels grey, text white |
+| `#65C128` main colour | Shop button, campaign tag, links, outline buttons |
+| `#39FF14` highlights / lighting | channel line under the lockup + the glow on it and on the Shop button |
+| `#194D13` depth | card border, hairlines, bar and well borders |
+| Acumin Pro for text and pieces | first in the font stack (see below) |
+| Sustained capitals, tracking 50–100 | everything uppercase, letter-spacing held between 0.05em and 0.10em |
+| Bold + regular pairing in headings | collection name bold, status line regular |
+| Square, technical layouts | all corner radii 0 |
+
+Glows are `text-shadow` / `box-shadow`; inboxes that drop them just show the
+flat colour. Bahnschrift (the guide's secondary face, for the logo) is not
+used: the logo should go in as an image.
+
+## Brand font (Acumin Pro)
+
+Email can only show a custom font where the inbox supports web fonts — Apple
+Mail and iOS Mail do; Gmail and Outlook never do and show the fallback
+(Helvetica / Arial), which is why the stack is
+`acumin-pro,'Acumin Pro','Helvetica Neue',Helvetica,Arial,sans-serif`.
+
+Acumin Pro is an Adobe font. Adobe licenses it for email only through an
+Adobe Fonts **web project** embed, not by hosting the font files yourself, so:
+
+1. In Adobe Fonts (the Creative Cloud account that owns the licence) create a
+   web project with Acumin Pro **Regular** and **Bold**.
+2. Copy the project ID (the 7 characters in `use.typekit.net/xxxxxxx.css`).
+3. Paste it into `Adobe Fonts web project ID`. The Liquid then starts with
+   `<style>@import url("https://use.typekit.net/xxxxxxx.css");</style>`.
+
+Leave the field blank and the email goes out with the fallback everywhere.
+**Never commit the .otf files to this repo — it is public.** Install them on
+your own machine (Font Book) and the preview shows Acumin Pro without the
+project ID. The `Font:` button above the preview switches to the fallback so
+you can see what Gmail and Outlook readers get; it never changes the Liquid.
 
 ## Language
 
@@ -42,8 +92,10 @@ the template's language, and the tool remembers the last language used.
 ## Pre-send checks
 
 The amber strip above the preview lists what should not reach a customer list:
-empty image slots and starter placeholders (`COLLECTION NAME`, `YOURCODE`, the
-Announcement Bar placeholder). `Copy Liquid` still copies, but says so.
+empty image slots, starter placeholders (`COLLECTION NAME`, `YOURCODE`, the
+Announcement Bar placeholder), Liquid over Shopify's 50 KB limit for a Custom
+Liquid section, and a malformed Adobe Fonts ID. `Copy Liquid` still copies, but
+says so.
 
 ## Critical layout note
 
