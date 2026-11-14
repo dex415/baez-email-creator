@@ -212,6 +212,8 @@
       <label class="chk"><input id="showtag" type="checkbox" checked> Show campaign tag</label>
       <label class="chk"><input id="showheader" type="checkbox"> Add BAEZ logo header <span style="color:var(--faint)">— off: Shopify already renders one</span></label>
       <label class="chk"><input id="aligncenter" type="checkbox" checked> Centre all text</label>
+      <label class="chk"><input id="showsocials" type="checkbox"> BAEZ socials footer <span style="color:var(--faint)">— app, socials and channels, under the card</span></label>
+      <label class="chk" id="iconsrow"><input id="socialsicons" type="checkbox"> Icons on the socials buttons <span style="color:var(--faint)" id="iconsnote"></span></label>
     </div>
     <div class="sect">Blocks in this email</div>
     <div id="blocklist"></div>
@@ -263,6 +265,7 @@
       <li><strong>Send test</strong> to yourself before scheduling.</li>
     </ol>
     <p style="margin-top:14px">Shopify always appends its own footer (social icons, store address, unsubscribe, copyright) below your content. That is required and can't be removed, so the Footer Grid block is optional — use it when you want the Help Center / Subscribe buttons, skip it to keep the email short.</p>
+    <p><strong>Socials footer icons</strong> load from Shopify Files. Upload the eight <code>bz-email-*.png</code> files (Content &rarr; Files) with exactly those names; until they are there, untick <em>Icons on the socials buttons</em> and the footer goes out as text buttons.</p>
     <p>Prefer Shopify's native <strong>Countdown</strong> section over the Launch Date block if you want a live timer — add it as a separate section above your Custom Liquid.</p>
     <p><strong>Product images look like different sizes?</strong> Each product has a <strong>Size</strong> slider — but it only <em>shrinks</em>. Email clients don't support the CSS needed to zoom in, so shrink the item shot too close until it matches the one beside it, rather than trying to enlarge the far one. For a tighter crop, re-export the source image.</p>
     <div class="mact"><div class="spacer"></div><button class="btn pri" id="how-close">Got it</button></div>
@@ -286,8 +289,8 @@ const BRAND = {
   name: 'BAEZ',
   shopUrl: 'https://baezonline.com',
   helpUrl: 'https://help.baez.bz',
-  igUrl: '',                 // e.g. https://instagram.com/<handle>
-  subscribeUrl: '',          // e.g. https://baezonline.com/pages/subscribe
+  igUrl: 'https://instagram.com/baez.oficial',
+  subscribeUrl: 'https://baezonline.com/pages/subscribe',
   shippingPolicyUrl: 'https://baezonline.com/policies/shipping-policy',
   returnPolicyUrl: 'https://baezonline.com/policies/refund-policy',
   logo: '',                  // square logo URL, 144px+. Empty = text wordmark
@@ -322,6 +325,12 @@ const TK = {
   cardBorder: '',
   noteLead: '#999',            // bold lead-in of the pre-order fine print
   lead: '#fff',                // emphasised line of a Stacked Rows pair
+  /* socials footer — defaults reproduce the block from baezonline.com/pages/subscribe */
+  socFont: "-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif",
+  socCard: '#000000', socLabel: '#8e8e93',
+  socBg: '#111111', socBorder: '#2c2c2e', socText: '#ffffff',
+  socPrimBg: '#ffffff', socPrimText: '#000000',
+  socSize: 14, socSizeSm: 13,
   width: 520
 };
 const TK_BASE = Object.assign({}, TK);
@@ -358,7 +367,13 @@ const THEMES = {
       accent: '#39FF14', accentGlow: 'text-shadow:0 0 12px rgba(57,255,20,.6);',
       tagColor: '#65C128', statusWeight: 400,
       ctaBg: '#65C128', ctaText: '#000', ctaGlow: 'box-shadow:0 0 24px rgba(57,255,20,.4);',
-      btnBorder: '#65C128', noteLead: '#F1F1F1', lead: '#65C128'
+      btnBorder: '#65C128', noteLead: '#F1F1F1', lead: '#65C128',
+      /* footer stays neutral (black / grey / white, dark-green hairlines) so the
+         one green button in the email is still the registration CTA; type steps
+         down because capitals + tracking run wider */
+      socFont: "acumin-pro,'Acumin Pro','Helvetica Neue',Helvetica,Arial,sans-serif",
+      socLabel: '#737373', socBg: '#000000', socBorder: '#194D13', socText: '#F1F1F1',
+      socPrimBg: '#F1F1F1', socSize: 12, socSizeSm: 11
     }
   }
 };
@@ -1055,6 +1070,8 @@ function lint(tpl, body) {
   const kb = new Blob([body == null ? buildBody(tpl) : body]).size / 1024;
   if (kb > LIQUID_LIMIT_KB) out.push('Liquid is ' + kb.toFixed(1) + ' KB — Shopify allows ' + LIQUID_LIMIT_KB + ' KB per Custom Liquid section');
   if (themeOf(s).brandFont && s.fontKit && !kitId(s.fontKit)) out.push('Adobe Fonts project ID is not a valid ID or embed code');
+  if (s.showSocials === true && s.socialsIcons !== false && ICON_STATE.missing.length)
+    out.push('Socials icons: ' + ICON_STATE.missing.length + ' of ' + SOCIAL_ICON_NAMES.length + ' not found on Shopify Files — upload the bz-email-*.png files or untick “Icons on the socials buttons”');
   (tpl.blocks || []).forEach(b => {
     const v = b.values || {};
     if (b.type === 'image' && !v.src) out.push('Image has no URL');
@@ -1090,6 +1107,79 @@ function translateDefaults(tpl, from, to) {
       });
     });
   });
+}
+
+/* ---------- SOCIALS FOOTER ----------
+   The "after sign-up" block from baezonline.com/pages/subscribe, as a standard
+   footer under the card. Language follows the email. In the BAEZ look the
+   markup is that block exactly; other looks restyle it through the soc* tokens.
+   Icons are bz-email-<name>.png in Shopify Files. */
+const SOCIALS = {
+  icons: 'https://cdn.shopify.com/s/files/1/0225/9399/4827/files/bz-email-',
+  follow: U('FOLLOW US', 'SÍGUENOS'),
+  channelsLabel: U('JOIN OUR CHANNELS', 'ÚNETE A NUESTROS CANALES'),
+  app: { url: 'https://apps.apple.com/us/app/baez/id6758910768', icon: 'apple-black', text: U('Download BAEZ', 'Descarga BAEZ') },
+  links: [
+    { url: 'https://instagram.com/baez.oficial', icon: 'instagram-white', text: 'Instagram' },
+    { url: 'https://www.tiktok.com/@baezoficial', icon: 'tiktok-white', text: 'TikTok' },
+    { url: 'https://www.threads.com/@baez.oficial', icon: 'threads-white', text: 'Threads' },
+    { url: 'https://www.facebook.com/share/1JMmWZNtpZ/?mibextid=wwXIfr', icon: 'facebook-white', text: 'Facebook' }
+  ],
+  contact: { url: 'mailto:info@baezonline.com', icon: 'mail-white', text: U('Contact BAEZ', 'Contacta a BAEZ') },
+  channels: [
+    { url: 'https://www.instagram.com/channel/AbZCN6nIYs26Mmfv/', icon: 'ig-channel-white', text: U('Instagram<br>Channel', 'Canal de<br>Instagram') },
+    { url: 'https://whatsapp.com/channel/0029VbE5vhMFHWq1opvQ650i', icon: 'whatsapp-white', text: U('WhatsApp<br>Channel', 'Canal de<br>WhatsApp') },
+    { url: 'https://www.tiktok.com/t/ZP9fVGs5QVP1j-LV6kp/', icon: 'tiktok-white', text: U('TikTok<br>Board', 'Board de<br>TikTok') }
+  ]
+};
+const SOCIAL_ICON_NAMES = Array.from(new Set(
+  [SOCIALS.app, SOCIALS.contact].concat(SOCIALS.links, SOCIALS.channels).map(o => o.icon)));
+/* Filled in by the app, which tries to load each icon: names that are not on Shopify Files. */
+const ICON_STATE = { checked: false, missing: [] };
+
+function renderSocials(s, c) {
+  if (s.showSocials !== true) return '';
+  const icons = s.socialsIcons !== false;
+  const F = TK.socFont;
+  const say = (t) => typeof t === 'string' ? t : tr(t, c);
+  const label = (t, pad) =>
+    '<tr><td colspan="2" style="padding:' + pad + ';text-align:center;font-family:' + F + ';font-size:12px;font-weight:600;letter-spacing:2px;color:' + TK.socLabel + ';">' + say(t) + '</td></tr>';
+  const ico = (name, size, css) => !icons ? '' :
+    '<img src="' + SOCIALS.icons + name + '.png" width="' + size + '" height="' + size + '" alt="" style="' + css + '">';
+  /* primary = the white app button; wide = a full-width row (bolder, centred).
+     Without icons every label is centred. */
+  const btn = (o, primary, wide) => {
+    const bg = primary ? TK.socPrimBg : TK.socBg, fg = primary ? TK.socPrimText : TK.socText;
+    return '<a href="' + o.url + '" target="_blank" style="display:block;background:' + bg + ';border:1px solid ' + (primary ? TK.socPrimBg : TK.socBorder) +
+      ';border-radius:12px;padding:13px 14px;color:' + fg + ';text-decoration:none;font-family:' + F + ';font-size:' + TK.socSize + 'px;font-weight:' + (wide ? 800 : 600) +
+      ';line-height:20px;text-align:' + ((wide || !icons) ? 'center' : 'left') + ';">' +
+      ico(o.icon, 18, 'display:inline-block;vertical-align:middle;border:0;margin:' + (primary ? '-3px' : '-2px') + ' 10px 0 0;') +
+      '<span style="color:' + fg + ';vertical-align:middle;">' + say(o.text) + '</span></a>';
+  };
+  const chan = (o, w, pad) =>
+    '<td width="' + w + '" valign="top" style="padding:' + pad + ';"><a href="' + o.url + '" target="_blank" style="display:block;background:' + TK.socBg + ';border:1px solid ' + TK.socBorder +
+    ';border-radius:12px;padding:14px 6px;color:' + TK.socText + ';text-decoration:none;font-family:' + F + ';font-size:' + TK.socSizeSm + 'px;font-weight:600;line-height:17px;text-align:center;">' +
+    ico(o.icon, 22, 'display:block;margin:0 auto 8px;border:0;') +
+    '<span style="color:' + TK.socText + ';">' + say(o.text) + '</span></a></td>';
+
+  let rows = label(SOCIALS.follow, '0px 0 14px') +
+    '<tr><td colspan="2" style="padding:0 0 8px;">' + btn(SOCIALS.app, true, true) + '</td></tr>';
+  for (let i = 0; i < SOCIALS.links.length; i += 2) {
+    const a = SOCIALS.links[i], b = SOCIALS.links[i + 1];
+    rows += '<tr><td width="50%" style="padding:0 4px 8px 0;">' + btn(a, false, false) + '</td>' +
+            '<td width="50%" style="padding:0 0 8px 4px;">' + (b ? btn(b, false, false) : '') + '</td></tr>';
+  }
+  rows += '<tr><td colspan="2" style="padding:0;">' + btn(SOCIALS.contact, false, true) + '</td></tr>' +
+    label(SOCIALS.channelsLabel, '24px 0 14px') +
+    '<tr><td colspan="2" style="padding:0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+    chan(SOCIALS.channels[0], '33%', '0 4px 0 0') + chan(SOCIALS.channels[1], '34%', '0 2px') + chan(SOCIALS.channels[2], '33%', '0 0 0 4px') +
+    '</tr></table></td></tr>';
+
+  /* Same centring rule as the card: width:100% + max-width needs margin:0 auto. */
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="' + hex6(TK.socCard) +
+    '" style="width:100%;max-width:' + TK.width + 'px;margin:0 auto;background:' + TK.socCard + ';border-radius:16px;">' +
+    '<tr><td style="padding:22px 18px 24px;' + (themeOf(s).caps ? 'text-transform:uppercase;' : '') + '">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' + rows + '</table></td></tr></table>';
 }
 
 /* ---------- document assembly ----------
@@ -1143,6 +1233,7 @@ function buildBody(tpl) {
      Apple Mail / iOS Mail load it; Gmail and Outlook show the fallback stack. */
   const kit = th.brandFont ? kitId(s.fontKit) : '';
   const fontCss = kit ? '<style>@import url("https://use.typekit.net/' + kit + '.css");</style>\n' : '';
+  const socials = renderSocials(s, ctx);
   const rows = (tpl.blocks || []).map(b => {
     const def = BLOCK_BY_ID[b.type];
     return def ? def.render(b.values || {}, ctx) : '';
@@ -1160,7 +1251,7 @@ function buildBody(tpl) {
        width:100% table itself. bgcolor/align attributes survive CSS sanitisers. */
     '<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" align="center" style="width:100%;background:' + TK.canvas + ';font-family:' + TK.font + ';">\n' +
     '  ' + renderHeader(s) + '\n' +
-    '  <tr><td align="center" style="padding:' + (s.showHeader ? '0' : '28px') + ' 20px 48px;">\n' +
+    '  <tr><td align="center" style="padding:' + (s.showHeader ? '0' : '28px') + ' 20px ' + (socials ? '16px' : '48px') + ';">\n' +
     '    <table width="100%" cellpadding="0" cellspacing="0" align="center" bgcolor="' + hex6(TK.card) + '" style="width:100%;max-width:' + TK.width + 'px;margin:0 auto;background:' + TK.card + ';border-radius:14px;' + (TK.cardBorder ? 'border:1px solid ' + TK.cardBorder + ';' : '') + 'font-family:' + TK.font + ';">\n' +
     '      <tr><td style="padding:30px 34px;' + (s.align === 'left' ? '' : 'text-align:center;') + (th.caps ? 'text-transform:uppercase;' : '') + '">\n' +
     '        <table width="100%" cellpadding="0" cellspacing="0">\n' +
@@ -1169,6 +1260,7 @@ function buildBody(tpl) {
     '      </td></tr>\n' +
     '    </table>\n' +
     '  </td></tr>\n' +
+    (socials ? '  <tr><td align="center" style="padding:0 20px 48px;">\n    ' + socials + '\n  </td></tr>\n' : '') +
     '</table>';
   return themeTransform(html, th);
 }
@@ -1279,7 +1371,8 @@ function mkBlock(type, overrides, lang, theme) {
 
 const baseSettings = (lang, theme, extra) => Object.assign({
   lang: lang, theme: theme, fontKit: storedKit(), showHeader: false, eyebrow: '', logoUrl: BRAND.shopUrl, align: 'center',
-  showTag: true, tagAlign: 'center', logoAlign: 'center', subject: '', preheader: ''
+  showTag: true, tagAlign: 'center', logoAlign: 'center', subject: '', preheader: '',
+  showSocials: true, socialsIcons: true
 }, extra || {});
 
 /* Mirrors the drop email as it is actually sent: tag, lockup, hero, one CTA,
@@ -1308,8 +1401,7 @@ function starterSale(lang, theme) {
       mkBlock('code', {}, lang),
       mkBlock('productRow', { label: STR.movingFast }, lang),
       mkBlock('notice', { strong: STR.headsUp, body: STR.saleNotice }, lang),
-      mkBlock('policy', { title: STR.returnTitle, body: STR.returnBody, linkText: STR.returnLink, linkUrl: BRAND.returnPolicyUrl }, lang),
-      mkBlock('footer', {}, lang)
+      mkBlock('policy', { title: STR.returnTitle, body: STR.returnBody, linkText: STR.returnLink, linkUrl: BRAND.returnPolicyUrl }, lang)
     ]
   };
 }
@@ -1319,7 +1411,7 @@ function starterBlank(lang, theme) {
   return {
     id: uid(), name: loc(STR.blankName, lang), kind: 'custom',
     settings: baseSettings(lang, theme),
-    blocks: [mkBlock('headline', {}, lang), mkBlock('button', {}, lang), mkBlock('footer', {}, lang)]
+    blocks: [mkBlock('headline', {}, lang), mkBlock('button', {}, lang)]
   };
 }
 
@@ -1474,6 +1566,34 @@ function renderPreview() {
   }, 120);
 }
 
+/* ---------------- socials icons ----------------
+   The footer icons live in Shopify Files. Try to load each one so a missing
+   upload shows up here as a warning instead of as broken images in an inbox.
+   Runs at start and again whenever the tab regains focus (i.e. after uploading). */
+function iconsNote() {
+  const n = $('#iconsnote');
+  if (!n) return;
+  n.textContent = !ICON_STATE.checked ? '— checking Shopify Files…'
+    : ICON_STATE.missing.length ? '— ' + ICON_STATE.missing.length + ' of ' + SOCIAL_ICON_NAMES.length + ' not on Shopify Files yet'
+    : '— all ' + SOCIAL_ICON_NAMES.length + ' found on Shopify Files';
+  n.style.color = (ICON_STATE.checked && ICON_STATE.missing.length) ? '#fbbf24' : '';
+}
+function probeIcons() {
+  let pending = SOCIAL_ICON_NAMES.length;
+  const bad = [];
+  const done = () => {
+    if (--pending > 0) return;
+    ICON_STATE.checked = true; ICON_STATE.missing = bad.slice().sort();
+    iconsNote(); if (tpl) renderPreview();
+  };
+  SOCIAL_ICON_NAMES.forEach(name => {
+    const im = new Image();
+    im.onload = done;
+    im.onerror = () => { bad.push(name); done(); };
+    im.src = SOCIALS.icons + name + '.png?probe=' + Date.now();
+  });
+}
+
 /* ---------------- meta bar ---------------- */
 function renderMeta() {
   $('#tplname').value = tpl.name || '';
@@ -1481,6 +1601,10 @@ function renderMeta() {
   $('#theme').value = themeKey(tpl.settings);
   $('#fontkit').value = tpl.settings.fontKit || '';
   $('#fontrow').style.display = themeOf(tpl.settings).brandFont ? 'block' : 'none';
+  $('#showsocials').checked = tpl.settings.showSocials === true;
+  $('#socialsicons').checked = tpl.settings.socialsIcons !== false;
+  $('#iconsrow').style.display = tpl.settings.showSocials === true ? 'flex' : 'none';
+  iconsNote();
   $('#eyebrow').value = (tpl.settings && tpl.settings.eyebrow) || '';
   $('#subject').value = (tpl.settings && tpl.settings.subject) || '';
   $('#preheader').value = (tpl.settings && tpl.settings.preheader) || '';
@@ -1635,6 +1759,8 @@ document.addEventListener('change', (e) => {
     renderAll();
     return;
   }
+  if (e.target.id === 'showsocials') { tpl.settings.showSocials = e.target.checked; renderMeta(); renderPreview(); return; }
+  if (e.target.id === 'socialsicons') { tpl.settings.socialsIcons = e.target.checked; renderPreview(); return; }
   if (e.target.id === 'showheader') { tpl.settings.showHeader = e.target.checked; renderPreview(); }
   if (e.target.id === 'showtag') { tpl.settings.showTag = e.target.checked; renderPreview(); }
   if (e.target.id === 'tagalign') { tpl.settings.tagAlign = e.target.value; renderPreview(); }
@@ -1796,6 +1922,8 @@ renderPalette();
 bindToolbar();
 bindDrag();
 tpl = starterDrop(curLang());
+probeIcons();
+window.addEventListener('focus', probeIcons);
 renderAll();
 refreshSaved();
 

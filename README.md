@@ -20,7 +20,7 @@ What is different here:
 | Language | English only | **English / Español** per template |
 | Brand look | one | **BAEZ** or **UNDERGOLD × BAEZ** per template |
 | Drop starter | bar, lockup, hero, CTA, details, grid, footer | tag, lockup, hero, CTA, details |
-| Footer Grid | four fixed buttons with icon assets | editable button list, text only |
+| Footer | Footer Grid block with icon assets | **socials footer** under the card (+ optional Footer Grid block) |
 | Empty image | broken image | dashed placeholder + warning |
 | Pre-send checks | none | warning strip above the preview |
 | Storage keys | `tt_ec_*`, table `tt_email_templates` | `bz_ec_*`, table `bz_email_templates` |
@@ -40,6 +40,25 @@ dead ships. This repo is public — URLs only, never keys.
 - **Stacked Rows** — centred two-line pairs (a date and what happens on it, key
   facts). The free-form version of Drop Details.
 - **Image** — the Size slider goes down to 20% so logos can sit small.
+
+## Socials footer
+
+`BAEZ socials footer` (on for new templates) adds the block from
+`baezonline.com/pages/subscribe` in its own row under the card: Download BAEZ,
+Instagram, TikTok, Threads, Facebook, Contact, then the three channels. It
+follows the email language. In the BAEZ look the markup is that block exactly;
+in UNDERGOLD × BAEZ it is restyled to the guide (capitals, Acumin Pro, square,
+white app button, dark-green outlines) and kept neutral so the registration
+button stays the only green one. Links and labels live in the `SOCIALS` object.
+
+**Icons.** They load from Shopify Files as `bz-email-<name>.png` — eight files:
+`apple-black`, `instagram-white`, `tiktok-white`, `threads-white`,
+`facebook-white`, `mail-white`, `ig-channel-white`, `whatsapp-white`. The tool
+tries to load each one and warns when any is missing; `Icons on the socials
+buttons` turns them off, and the footer then goes out as centred text buttons.
+
+The old **Footer Grid** block is still in the palette but no longer part of the
+starters.
 
 ## Import / export
 
