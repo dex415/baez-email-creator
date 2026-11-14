@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="dark">
+<title>BAEZ Email Creator</title>
+<style>
+  *{box-sizing:border-box}
+  :root{
+    --bg:#000; --panel:#0b0b0c; --card:#111; --well:#18181b; --rule:#3f3f46;
+    --hair:#222; --white:#fff; --text:#e8e8e8; --body:#aaa; --muted:#888; --faint:#777;
+    --link:#6ea8ff; --green:#4ade80;
+    --font:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;
+  }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer}
+  input,textarea,select{font-family:inherit}
+
+  /* ---- top bar ---- */
+  .top{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--hair);background:var(--panel);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;font-size:13px;color:#fff;white-space:nowrap}
+  .brand img{width:28px;height:28px;border-radius:7px;display:block}
+  .brand .mark{width:28px;height:28px;border-radius:7px;background:#fff;color:#000;font-size:10px;font-weight:800;letter-spacing:.5px;display:flex;align-items:center;justify-content:center}
+  .brand small{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+  .spacer{flex:1}
+  .btn{height:34px;padding:0 13px;background:var(--well);border:1px solid var(--rule);border-radius:8px;color:#fff;font-size:12px;font-weight:600;white-space:nowrap}
+  .btn:hover{background:#232327}
+  .btn.pri{background:#fff;color:#000;border-color:#fff}
+  .btn.pri:hover{background:#e6e6e6}
+  .btn.gh{background:transparent}
+  .badge{font-size:9px;font-weight:800;letter-spacing:1.2px;padding:4px 7px;border-radius:5px;background:var(--well);border:1px solid var(--rule);color:var(--muted)}
+  .badge.ok{color:var(--green);border-color:#1d4a2e}
+
+  /* ---- layout ---- */
+  .wrap{display:grid;grid-template-columns:212px minmax(320px,1fr) minmax(380px,1.15fr);height:calc(100vh - 63px);overflow:hidden}
+  @media(max-width:1100px){.wrap{grid-template-columns:1fr;height:auto;overflow:visible}}
+  .col{overflow-y:auto;padding:16px;border-right:1px solid var(--hair)}
+  .col:last-child{border-right:0}
+  .sect{font-size:10px;font-weight:800;letter-spacing:1.4px;color:var(--muted);text-transform:uppercase;margin:0 0 10px}
+  .sect.mt{margin-top:26px}
+
+  /* ---- palette ---- */
+  .plabel{font-size:9px;font-weight:800;letter-spacing:1.2px;color:var(--faint);text-transform:uppercase;margin:14px 0 6px}
+  .pgroup:first-child .plabel{margin-top:0}
+  .pitem{display:flex;justify-content:space-between;align-items:center;width:100%;padding:8px 10px;margin-bottom:4px;background:var(--card);border:1px solid var(--hair);border-radius:7px;color:var(--text);font-size:12px;text-align:left}
+  .pitem:hover{border-color:var(--rule);background:var(--well);color:#fff}
+  .plus{color:var(--faint);font-weight:700}
+
+  /* ---- saved ---- */
+  .sitem{display:flex;gap:4px;margin-bottom:4px}
+  .sopen{flex:1;text-align:left;padding:8px 10px;background:var(--card);border:1px solid var(--hair);border-radius:7px;color:var(--text)}
+  .sopen:hover{border-color:var(--rule)}
+  .sitem.cur .sopen{border-color:var(--rule);background:var(--well)}
+  .sname{display:block;font-size:12px;color:#fff;font-weight:600}
+  .smeta{display:block;font-size:10px;color:var(--faint);margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+  .srm{width:30px;background:var(--card);border:1px solid var(--hair);border-radius:7px;font-size:14px;line-height:1}
+
+  /* ---- meta fields ---- */
+  .metagrid{display:grid;gap:10px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--hair)}
+  .fld{display:block;margin-bottom:9px}
+  .fld>span{display:block;font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+  .fld input,.fld textarea,.fld select{width:100%;padding:8px 10px;background:#0a0a0b;border:1px solid var(--hair);border-radius:7px;color:#fff;font-size:12.5px;line-height:1.5}
+  .fld input:focus,.fld textarea:focus,.fld select:focus{outline:0;border-color:var(--rule);background:#0e0e10}
+  .fld textarea{resize:vertical;min-height:64px}
+  .fld.rng>span{display:flex;justify-content:space-between;align-items:baseline}
+  .fld.rng .rv{color:#fff;font-size:11px;font-weight:700;letter-spacing:0}
+  .fld.rng input[type=range]{width:100%;padding:0;background:transparent;border:0;accent-color:#fff;height:18px;cursor:pointer}
+  .fld.rng .rhelp{display:block;font-style:normal;font-size:10px;color:var(--faint);line-height:1.5;margin-top:4px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--body)}
+  .chk input{accent-color:#fff;width:14px;height:14px}
+
+  /* collapsible group for fields Shopify won't receive */
+  .notes{border:1px solid var(--hair);border-radius:8px;background:#0a0a0b;margin-bottom:2px}
+  .notes summary{cursor:pointer;list-style:none;padding:9px 11px;font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .notes summary::-webkit-details-marker{display:none}
+  .notes summary::before{content:"\25B8";font-size:9px;transition:transform .15s;color:var(--faint)}
+  .notes[open] summary::before{transform:rotate(90deg)}
+  .notes summary b{margin-left:auto;font-size:9px;font-weight:800;letter-spacing:1px;color:var(--faint);border:1px solid var(--hair);border-radius:4px;padding:2px 6px}
+  .notes .nhint{margin:0 11px 10px;font-size:10.5px;color:var(--faint);line-height:1.6}
+  .notes .fld{padding:0 11px}
+  .notes .fld:last-child{padding-bottom:11px;margin-bottom:0}
+  /* .fld>span is more specific than .wc alone — must match it to win */
+  .fld>span.wc{display:flex;gap:5px;margin-bottom:0;text-transform:none;letter-spacing:0}
+  .fld>span.wc input{flex:1;width:auto}
+  .cpy{padding:0 10px;background:var(--well);border:1px solid var(--hair);border-radius:7px;color:var(--muted);font-size:11px;font-weight:600;white-space:nowrap}
+  .cpy:hover{color:#fff;border-color:var(--rule)}
+
+  /* ---- block cards ---- */
+  .bcard{background:var(--card);border:1px solid var(--hair);border-radius:9px;margin-bottom:6px;overflow:hidden}
+  .bcard.sel{border-color:var(--rule)}
+  .brow{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer}
+  .bname{flex:1}
+  .grip{color:var(--faint);font-size:11px;letter-spacing:-2px;cursor:grab;user-select:none;padding:2px 2px 2px 0;line-height:1}
+  .grip:active{cursor:grabbing}
+  .grip.lock{cursor:default;font-size:7px;opacity:.5}
+  .bcard.dragging{opacity:.35}
+  .bcard.dropabove{box-shadow:inset 0 3px 0 0 #fff}
+  .bcard.dropbelow{box-shadow:inset 0 -3px 0 0 #fff}
+  .bcard.sel .brow{background:var(--well)}
+  .bname{font-size:12px;font-weight:600;color:#fff}
+  .bacts{display:flex;gap:3px}
+  .bacts button{width:24px;height:24px;background:transparent;border:1px solid var(--hair);border-radius:5px;color:var(--muted);font-size:10px;line-height:1;padding:0}
+  .bacts button:hover:not(:disabled){color:#fff;border-color:var(--rule)}
+  .bacts button:disabled{opacity:.25;cursor:default}
+  .bacts .dan:hover{color:#f87171;border-color:#7f1d1d}
+  .bedit{padding:12px 11px 4px;border-top:1px solid var(--hair)}
+  .nofields{font-size:11px;color:var(--faint);padding-bottom:10px}
+
+  /* ---- list editor ---- */
+  .lwrap{margin:4px 0 12px;padding:10px;background:#0a0a0b;border:1px solid var(--hair);border-radius:8px}
+  .llabel{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+  .litem{padding:9px;margin-bottom:7px;background:var(--card);border:1px solid var(--hair);border-radius:7px}
+  .lhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--faint);text-transform:uppercase}
+  .ladd{width:100%;padding:7px;background:transparent;border:1px dashed var(--rule);border-radius:6px;color:var(--muted);font-size:11px;font-weight:600}
+  .ladd:hover{color:#fff;border-color:#666}
+
+  /* ---- preview ---- */
+  .pvhead{display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+  .vtab{height:28px;padding:0 11px;background:transparent;border:1px solid var(--hair);border-radius:6px;color:var(--muted);font-size:11px;font-weight:600}
+  .vtab.on{background:var(--well);border-color:var(--rule);color:#fff}
+  #previewwrap{display:flex;justify-content:center}
+  #frame{width:100%;height:calc(100vh - 150px);min-height:520px;border:1px solid var(--hair);border-radius:10px;background:#000;transition:max-width .2s}
+  @media(max-width:1100px){#frame{height:70vh}}
+  #codewrap{display:none}
+  #codeout{white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;line-height:1.6;color:#9ca3af;background:#0a0a0b;border:1px solid var(--hair);border-radius:10px;padding:14px;max-height:calc(100vh - 150px);overflow:auto}
+  #sizehint{font-size:10px;color:var(--faint);letter-spacing:.5px}
+  #lintbar{display:none;margin:0 0 12px;padding:10px 12px;background:#1a1206;border-left:3px solid #eab308;border-radius:6px;font-size:11.5px;color:#e8d4a0;line-height:1.6}
+  #lintbar.on{display:block}
+  #lintbar strong{color:#fbbf24}
+  .lhelp{font-size:10px;color:var(--faint);line-height:1.5;margin:-2px 0 8px}
+  .fld .rhelp{display:block;font-style:normal;font-size:10px;color:var(--faint);line-height:1.5;margin-top:4px}
+
+  .empty{padding:26px 12px;text-align:center;font-size:12px;color:var(--faint);line-height:1.7;border:1px dashed var(--hair);border-radius:9px}
+  .empty.sm{padding:14px}
+
+  /* ---- modal ---- */
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:50;align-items:center;justify-content:center;padding:20px}
+  .modal.on{display:flex}
+  .mbox{width:100%;max-width:460px;background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:24px}
+  .mbox h3{margin:0 0 6px;font-size:15px;color:#fff}
+  .mbox p{margin:0 0 16px;font-size:12px;color:var(--body);line-height:1.7}
+  .mact{display:flex;gap:8px;margin-top:16px}
+
+  /* ---- toast ---- */
+  .toast{position:fixed;bottom:22px;left:50%;transform:translate(-50%,20px);background:#fff;color:#000;font-size:12px;font-weight:600;padding:11px 18px;border-radius:9px;opacity:0;pointer-events:none;transition:.22s;z-index:60;max-width:88vw;text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .toast.bad{background:#7f1d1d;color:#fecaca}
+  code{background:var(--well);padding:1px 5px;border-radius:4px;font-size:11px;color:#e8e8e8}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand">
+    <span id="brandmark"></span>
+    <div>BAEZ<small>Email Creator</small></div>
+  </div>
+  <span id="modebadge" class="badge">LOCAL</span>
+  <div class="spacer"></div>
+  <button class="btn gh" id="new-blank">Blank</button>
+  <button class="btn gh" id="new-drop">+ Drop</button>
+  <button class="btn gh" id="new-sale">+ Sale</button>
+  <button class="btn gh" id="howto">How to paste</button>
+  <button class="btn gh" id="settings">Settings</button>
+  <button class="btn" id="dl">.liquid</button>
+  <button class="btn" id="dlhtml">.html</button>
+  <button class="btn" id="dljson">.json</button>
+  <button class="btn" id="save">Save</button>
+  <button class="btn pri" id="copy">Copy Liquid</button>
+</div>
+
+<div class="wrap">
+
+  <!-- LEFT -->
+  <div class="col">
+    <div class="sect">Blocks</div>
+    <div id="palette"></div>
+    <div class="sect mt">Saved</div>
+    <div id="savedlist"></div>
+  </div>
+
+  <!-- MIDDLE -->
+  <div class="col">
+    <div class="sect">Email</div>
+    <div class="metagrid">
+      <label class="fld"><span>Template name</span><input id="tplname" type="text"></label>
+
+      <details class="notes" id="notes">
+        <summary>Subject &amp; preheader <b>not exported</b></summary>
+        <p class="nhint">Custom Liquid can't set these. They're stored with the template so you have them to hand — paste each into Shopify's Email details panel.</p>
+        <label class="fld"><span>Subject line</span><span class="wc"><input id="subject" type="text" placeholder="COLLECTION NAME NOW AVAILABLE"><button class="cpy" data-copy="subject">Copy</button></span></label>
+        <label class="fld"><span>Preheader</span><span class="wc"><input id="preheader" type="text" placeholder="The line shown after the subject in the inbox"><button class="cpy" data-copy="preheader">Copy</button></span></label>
+      </details>
+
+      <label class="fld"><span>Email language</span><select id="lang"><option value="en">English</option><option value="es">Español</option></select><em class="rhelp">Switches the built-in labels. Starter copy you haven’t edited flips too; anything you typed stays as typed.</em></label>
+      <label class="fld"><span>Campaign tag</span><input id="eyebrow" type="text" placeholder="NEW DROP"></label>
+      <div class="two">
+        <label class="fld"><span>Tag alignment</span><select id="tagalign"><option>left</option><option selected>center</option><option>right</option></select></label>
+        <label class="fld"><span>Logo alignment</span><select id="logoalign"><option>left</option><option selected>center</option><option>right</option></select></label>
+      </div>
+      <label class="chk"><input id="showtag" type="checkbox" checked> Show campaign tag</label>
+      <label class="chk"><input id="showheader" type="checkbox"> Add BAEZ logo header <span style="color:var(--faint)">— off: Shopify already renders one</span></label>
+      <label class="chk"><input id="aligncenter" type="checkbox" checked> Centre all text</label>
+    </div>
+    <div class="sect">Blocks in this email</div>
+    <div id="blocklist"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="col">
+    <div id="lintbar"></div>
+    <div class="pvhead">
+      <button class="vtab on" data-view="desktop">Desktop</button>
+      <button class="vtab" data-view="mobile">Mobile</button>
+      <button class="vtab" data-view="code">Code</button>
+      <div class="spacer"></div>
+      <span id="sizehint"></span>
+    </div>
+    <div id="previewwrap"><iframe id="frame" title="Email preview"></iframe></div>
+    <div id="codewrap"><pre id="codeout"></pre></div>
+  </div>
+
+</div>
+
+<div class="modal" id="modal">
+  <div class="mbox">
+    <h3>Saved templates storage</h3>
+    <p>Right now templates save to this browser only. To share them across machines, run <code>supabase-schema.sql</code> on a Supabase project, then paste its URL and <strong>anon</strong> key below. Use an internal project for this — <strong>not</strong> the BAEZ app’s production project, whose anon key ships inside the mobile apps.</p>
+    <label class="fld"><span>Supabase project URL</span><input id="sb-url" type="text" placeholder="https://xxxx.supabase.co"></label>
+    <label class="fld"><span>Anon public key</span><input id="sb-key" type="text" placeholder="eyJhbGciOi..."></label>
+    <div class="mact">
+      <button class="btn pri" id="sb-save">Save</button>
+      <button class="btn" id="sb-clear">Clear</button>
+      <div class="spacer"></div>
+      <button class="btn gh" id="modal-close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="howmodal">
+  <div class="mbox">
+    <h3>Getting this into Shopify Messaging</h3>
+    <ol style="margin:0;padding-left:18px;font-size:12px;color:var(--body);line-height:1.9">
+      <li>Shopify admin &rarr; <strong>Messaging</strong> &rarr; <strong>Create message</strong> &rarr; Email.</li>
+      <li>Keep Shopify's logo band and its footer. This app only generates the middle &mdash; campaign tag down to the footer buttons.</li>
+      <li>In the left <strong>Email colors</strong> panel set <em>Content background</em> to <code>#000000</code> and <em>Border</em> to <code>#000000</code>. Without this the campaign shell stays white and frames the dark card.</li>
+      <li>Delete the default image and button sections.</li>
+      <li><strong>Add section</strong> &rarr; scroll to <strong>Custom</strong> &rarr; <strong>Custom Liquid</strong>.</li>
+      <li>Hit <strong>Copy Liquid</strong> here, paste into that section.</li>
+      <li>Set Subject and Preview text from the fields in the middle column — Custom Liquid cannot set those.</li>
+      <li><strong>Send test</strong> to yourself before scheduling.</li>
+    </ol>
+    <p style="margin-top:14px">Shopify always appends its own footer (social icons, store address, unsubscribe, copyright) below your content. That is required and can't be removed, so the Footer Grid block is optional — use it when you want the Help Center / Subscribe buttons, skip it to keep the email short.</p>
+    <p>Prefer Shopify's native <strong>Countdown</strong> section over the Launch Date block if you want a live timer — add it as a separate section above your Custom Liquid.</p>
+    <p><strong>Product images look like different sizes?</strong> Each product has a <strong>Size</strong> slider — but it only <em>shrinks</em>. Email clients don't support the CSS needed to zoom in, so shrink the item shot too close until it matches the one beside it, rather than trying to enlarge the far one. For a tighter crop, re-export the source image.</p>
+    <div class="mact"><div class="spacer"></div><button class="btn pri" id="how-close">Got it</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+   BAEZ Email Creator — Block Library
+   Fork of the TWNTY-TWO® Email Creator. The layout rules are identical
+   because they are load-bearing in Shopify Messaging; the brand config,
+   default copy and EN/ES strings are BAEZ's.
+   ========================================================================= */
+
+/* ---------- BRAND — everything BAEZ-specific lives in this block ----------
+   Empty links are simply left out of the email, so nothing dead ever ships.
+   This repo is public: URLs only, never keys. */
+const BRAND = {
+  name: 'BAEZ',
+  shopUrl: 'https://baezonline.com',
+  helpUrl: 'https://help.baez.bz',
+  igUrl: '',                 // e.g. https://instagram.com/<handle>
+  subscribeUrl: '',          // e.g. https://baezonline.com/pages/subscribe
+  shippingPolicyUrl: 'https://baezonline.com/policies/shipping-policy',
+  returnPolicyUrl: 'https://baezonline.com/policies/refund-policy',
+  logo: '',                  // square logo URL, 144px+. Empty = text wordmark
+  accent: '#ef4444'          // the channel line under the lockup
+};
+
+const TK = {
+  font: "-apple-system,'Helvetica Neue',Helvetica,Arial,sans-serif",
+  canvas: '#000',
+  card: '#111',
+  well: '#18181b',
+  rule: '#3f3f46',
+  hair: '#222',
+  white: '#fff',
+  text: '#e8e8e8',
+  body: '#aaa',
+  muted: '#888',
+  faint: '#777',
+  link: '#6ea8ff',
+  green: '#4ade80',
+  amberBg: '#1a1206',
+  amberRule: '#eab308',
+  amberHead: '#fbbf24',
+  amberText: '#e8d4a0',
+  width: 520
+};
+
+/* ---------- EN / ES ----------
+   L(en, es) marks default copy that exists in both languages. Switching the
+   template language flips any field that still holds an untouched default and
+   leaves everything that was typed by hand alone.
+   U(en, es) is for built-in labels that are not editable fields. */
+const PAIRS = [];
+const L = (en, es) => { const p = { en: en, es: es }; PAIRS.push(p); return p; };
+const U = (en, es) => ({ en: en, es: es });
+const isLoc = (x) => !!x && typeof x === 'object' && !Array.isArray(x) &&
+  typeof x.en === 'string' && typeof x.es === 'string' && Object.keys(x).length === 2;
+function loc(x, lang) {
+  if (isLoc(x)) return x[lang] || x.en;
+  if (Array.isArray(x)) return x.map(i => loc(i, lang));
+  if (x && typeof x === 'object') { const o = {}; Object.keys(x).forEach(k => { o[k] = loc(x[k], lang); }); return o; }
+  return x;
+}
+const tr = (p, c) => p[(c && c.lang) === 'es' ? 'es' : 'en'];
+
+const UI = {
+  releases: U('Releases', 'Lanzamiento'),
+  availability: U('Availability', 'Disponibilidad'),
+  ships: U('Ships', 'Envío'),
+  preorderLink: U('See Pre-Order Policy', 'Ver política de preventa'),
+  noteLead: U('Please note:', 'Importante:'),
+  preorderNote: U('Pre-order items ship on the timeline listed in our Shipping Policy.',
+                  'Los artículos en preventa se envían en el plazo indicado en nuestra Política de Envíos.'),
+  avail: {
+    'Online Only': U('Online Only', 'Solo en línea'),
+    'Online & In-Store': U('Online & In-Store', 'En línea y en tienda'),
+    'Pop-Up Event': U('Pop-Up Event', 'Evento Pop-Up')
+  }
+};
+
+/* Shared default copy (declared once so a phrase is only ever one pair) */
+const C = {
+  dropDetails: L('Drop Details', 'Detalles del drop'),
+  shopNow: L('Shop Now', 'Comprar ahora'),
+  collection: L('COLLECTION NAME', 'NOMBRE DE LA COLECCIÓN'),
+  announce: L('ANNOUNCEMENT — EDIT THIS LINE', 'ANUNCIO — EDITA ESTA LÍNEA'),
+  productName: L('Product name', 'Nombre del producto'),
+  releases: L('Releases', 'Lanzamiento'),
+  noteLead: L('Please note:', 'Importante:')
+};
+const CODE_PLACEHOLDER = 'YOURCODE';
+
+/* Starter-template copy */
+const STR = {
+  dropName: L('Drop Announcement', 'Anuncio de Drop'),
+  saleName: L('Sale / Promo', 'Venta / Promo'),
+  blankName: L('Untitled Email', 'Correo sin título'),
+  newDrop: L('NEW DROP', 'NUEVO DROP'),
+  limited: L('LIMITED TIME', 'TIEMPO LIMITADO'),
+  dropSubject: L('COLLECTION NAME NOW AVAILABLE', 'NOMBRE DE LA COLECCIÓN YA DISPONIBLE'),
+  saleSubject: L('20% OFF SITEWIDE — THIS WEEKEND ONLY', '20% DE DESCUENTO EN TODA LA TIENDA — SOLO ESTE FIN DE SEMANA'),
+  heroAlt: L('New collection', 'Nueva colección'),
+  saleTitle: L('20% off. This weekend only.', '20% de descuento. Solo este fin de semana.'),
+  saleBody: L('Sitewide, no minimum. Ends Sunday at 11:59 PM PT.', 'En toda la tienda, sin mínimo de compra. Termina el domingo a las 11:59 PM (PT).'),
+  movingFast: L('Moving Fast', 'Se están acabando'),
+  headsUp: L('Heads up:', 'Ojo:'),
+  saleNotice: L('Write your sale terms here.', 'Escribe aquí los términos de la promoción.'),
+  returnTitle: L('Return Policy', 'Política de devoluciones'),
+  returnBody: L('Write your return policy summary here.', 'Escribe aquí el resumen de tu política de devoluciones.'),
+  returnLink: L('View Return Policy', 'Ver política de devoluciones')
+};
+
+/* ---------- helpers ---------- */
+const nl2br = (s) => String(s == null ? '' : s).replace(/\r\n|\r|\n/g, '<br>');
+const esc = (s) => String(s == null ? '' : s);
+const row = (inner, pad, align) =>
+  '<tr><td' + (align ? ' align="' + align + '"' : '') +
+  ' style="' + (pad || 'padding-top:24px;') + '">' + inner + '</td></tr>';
+
+/* Dashed stand-in shown wherever an image URL is still empty, so a missing
+   image is obvious in the preview and in a test send instead of a broken icon. */
+const placeholder = (label, maxW, padY) =>
+  '<div style="border:1px dashed ' + TK.rule + ';border-radius:10px;padding:' + padY + 'px 10px;max-width:' + maxW + 'px;margin:0 auto;' +
+  'font-size:10px;font-weight:700;letter-spacing:1px;color:' + TK.faint + ';text-transform:uppercase;text-align:center;">' + label + '</div>';
+
+/* Normalise a Shopify CDN image so every product cell is exactly the same shape.
+   MEASURED, not assumed: on /files/ URLs Shopify IGNORES both `crop=center` and
+   the legacy `_1200x1200_crop_center` filename form — asking for 1200x1200
+   returns 1200x1097. It DOES honour `pad_color`, which returns the exact box
+   requested and letterboxes the rest. Padding also never cuts off product.
+   Non-Shopify URLs pass through untouched. */
+const SHAPES = {
+  'Original': null,
+  'Square': [1200, 1200],
+  'Portrait 4:5': [1200, 1500],
+  'Portrait 3:4': [1200, 1600],
+  'Landscape 4:3': [1600, 1200]
+};
+function cdnShape(url, shape, pad) {
+  const dims = SHAPES[shape];
+  if (!dims || !url) return url;
+  if (!/cdn\.shopify\.com/i.test(url)) return url;
+  const hex = String(pad || 'ffffff').replace(/[^0-9a-f]/gi, '').slice(0, 6) || 'ffffff';
+  const clean = String(url).replace(/([?&])(width|height|crop|pad_color)=[^&]*/gi, '').replace(/[?&]$/, '');
+  const sep = clean.indexOf('?') >= 0 ? '&' : '?';
+  return clean + sep + 'width=' + dims[0] + '&height=' + dims[1] + '&pad_color=' + hex;
+}
+
+/* Shared atoms */
+const A = {
+  eyebrow: (t) =>
+    '<div style="font-size:11px;color:' + TK.muted + ';font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">' + esc(t) + '</div>',
+
+  sectionTitle: (t) =>
+    '<div style="font-size:13px;color:' + TK.white + ';font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px;">' + esc(t) + '</div>',
+
+  well: (html) =>
+    '<div style="background:' + TK.well + ';border-left:3px solid ' + TK.rule + ';border-radius:6px;padding:14px 16px;font-size:12px;color:' + TK.body + ';line-height:1.7;">' + html + '</div>',
+
+  arrowLink: (text, url) =>
+    !text ? '' :
+    '<div style="margin-top:8px;"><a href="' + esc(url || '#') + '" style="color:' + TK.link + ';text-decoration:none;font-size:12px;font-weight:600;">' + esc(text) + ' &rarr;</a></div>',
+
+  /* 56px bordered button */
+  button: (text, url) =>
+    '<a href="' + esc(url || '#') + '" style="display:block;height:56px;box-sizing:border-box;text-align:center;background:' + TK.well + ';border:1px solid ' + TK.rule + ';border-radius:8px;color:' + TK.white + ';font-size:12px;font-weight:700;text-decoration:none;">' +
+    '<span style="display:inline-block;height:100%;vertical-align:middle;"></span>' +
+    '<span style="display:inline-block;vertical-align:middle;line-height:1.25;padding:0 6px;">' + text + '</span></a>',
+
+  /* Inverted / solid button for primary marketing CTAs */
+  buttonSolid: (text, url) =>
+    '<a href="' + esc(url || '#') + '" style="display:block;height:56px;box-sizing:border-box;text-align:center;background:' + TK.white + ';border:1px solid ' + TK.white + ';border-radius:8px;color:#000;font-size:12px;font-weight:700;letter-spacing:0.5px;text-decoration:none;">' +
+    '<span style="display:inline-block;height:100%;vertical-align:middle;"></span>' +
+    '<span style="display:inline-block;vertical-align:middle;line-height:1.25;padding:0 6px;">' + text + '</span></a>'
+};
+
+/* ---------- block definitions ----------
+   render(values, ctx) — ctx.lang is 'en' or 'es' and only affects built-in
+   labels; everything typed into a field is emitted exactly as typed. */
+const BLOCKS = [
+
+/* ============================== CONTENT ============================== */
+{
+  id: 'shipbar',
+  name: 'Announcement Bar',
+  group: 'Content',
+  hint: 'Thin strip pinned to the very top — a shipping offer or one-line announcement as live text. One per email.',
+  fields: [
+    { key: 'text', label: 'Bar text', type: 'text', def: C.announce },
+    { key: 'href', label: 'Links to (optional)', type: 'url', def: '' }
+  ],
+  render: (v) => {
+    const inner = '<div style="text-align:center;font-size:11px;font-weight:700;letter-spacing:1.5px;color:' + TK.text + ';text-transform:uppercase;">' + esc(v.text) + '</div>';
+    const wrapped = v.href ? '<a href="' + esc(v.href) + '" style="text-decoration:none;">' + inner + '</a>' : inner;
+    return '<tr><td style="padding-bottom:20px;"><div style="background:' + TK.well + ';border:1px solid ' + TK.rule + ';border-radius:8px;padding:11px 12px;">' + wrapped + '</div></td></tr>';
+  }
+},
+{
+  id: 'lockup',
+  name: 'Collection Lockup',
+  group: 'Content',
+  hint: 'Stacked brand / collection / status lockup as LIVE TEXT — readable with images off.',
+  fields: [
+    { key: 'brand', label: 'Brand line', type: 'text', def: BRAND.name },
+    { key: 'collection', label: 'Collection name', type: 'textarea', def: C.collection },
+    { key: 'status', label: 'Status line', type: 'text', def: L('NOW AVAILABLE', 'YA DISPONIBLE') },
+    { key: 'channel', label: 'Channel line (accent colour)', type: 'text', def: L('ONLINE ONLY', 'SOLO EN LÍNEA') }
+  ],
+  render: (v) =>
+    row((v.brand ? '<div style="font-size:15px;color:' + TK.white + ';font-weight:800;letter-spacing:.5px;line-height:1.3;">' + esc(v.brand) + '</div>' : '') +
+      (v.collection ? '<div style="font-size:19px;color:' + TK.white + ';font-weight:800;letter-spacing:.5px;line-height:1.25;margin-top:2px;">' + nl2br(v.collection) + '</div>' : '') +
+      (v.status ? '<div style="font-size:19px;color:' + TK.white + ';font-weight:800;letter-spacing:.5px;line-height:1.25;">' + esc(v.status) + '</div>' : '') +
+      (v.channel ? '<div style="font-size:12px;color:' + BRAND.accent + ';font-weight:800;letter-spacing:1px;margin-top:6px;">' + esc(v.channel) + '</div>' : ''),
+      'padding-top:18px;', 'center')
+},
+{
+  id: 'headline',
+  name: 'Headline + Body',
+  group: 'Content',
+  hint: 'The opening statement.',
+  fields: [
+    { key: 'eyebrow', label: 'Eyebrow (optional)', type: 'text', def: '' },
+    { key: 'title', label: 'Headline', type: 'text', def: L('The drop is live.', 'El drop ya está disponible.') },
+    { key: 'body', label: 'Body copy', type: 'textarea', def: L('Limited run. Once it’s gone, it’s gone.', 'Edición limitada. Cuando se acabe, se acabó.') }
+  ],
+  render: (v) => {
+    let h = '';
+    if (v.eyebrow) h += '<tr><td style="padding-bottom:6px;">' + A.eyebrow(v.eyebrow) + '</td></tr>';
+    if (v.title) h += '<tr><td style="font-size:22px;color:' + TK.white + ';font-weight:700;padding-bottom:8px;line-height:1.3;">' + nl2br(v.title) + '</td></tr>';
+    if (v.body) h += '<tr><td style="font-size:13px;color:' + TK.body + ';line-height:1.7;padding-bottom:4px;">' + nl2br(v.body) + '</td></tr>';
+    return h;
+  }
+},
+{
+  id: 'text',
+  name: 'Paragraph',
+  group: 'Content',
+  hint: 'Plain body copy. Optional uppercase label above it.',
+  fields: [
+    { key: 'label', label: 'Label (optional)', type: 'text', def: '' },
+    { key: 'body', label: 'Body copy', type: 'textarea', def: L('Write your message here.', 'Escribe tu mensaje aquí.') }
+  ],
+  render: (v) =>
+    row((v.label ? A.eyebrow(v.label) : '') +
+        '<div style="font-size:13px;color:' + TK.body + ';line-height:1.7;">' + nl2br(v.body) + '</div>')
+},
+{
+  id: 'notice',
+  name: 'Notice (amber)',
+  group: 'Content',
+  hint: 'The high-attention callout — pre-order warnings, limited quantities.',
+  fields: [
+    { key: 'strong', label: 'Bold lead-in', type: 'text', def: C.noteLead },
+    { key: 'body', label: 'Body copy', type: 'textarea', def: L('Limited quantities. Once it’s gone, it’s gone.', 'Piezas limitadas. Cuando se acaben, se acabaron.') }
+  ],
+  render: (v) =>
+    row('<div style="background:' + TK.amberBg + ';border-left:3px solid ' + TK.amberRule + ';border-radius:6px;padding:12px 14px;font-size:12px;color:' + TK.amberText + ';line-height:1.7;">' +
+        (v.strong ? '<strong style="color:' + TK.amberHead + ';">' + esc(v.strong) + '</strong> ' : '') +
+        nl2br(v.body) + '</div>', 'padding-top:18px;')
+},
+{
+  id: 'policy',
+  name: 'Info Card',
+  group: 'Content',
+  hint: 'Titled block with the left rule — shipping, returns, anything that needs a short explanation.',
+  fields: [
+    { key: 'title', label: 'Title', type: 'text', def: L('Shipping', 'Envíos') },
+    { key: 'body', label: 'Body copy', type: 'textarea', def: L('Write your shipping or policy note here.', 'Escribe aquí tu nota de envíos o políticas.') },
+    { key: 'linkText', label: 'Link text (optional)', type: 'text', def: '' },
+    { key: 'linkUrl', label: 'Link URL', type: 'url', def: BRAND.shippingPolicyUrl }
+  ],
+  render: (v) =>
+    row(A.sectionTitle(v.title) + A.well(nl2br(v.body)) + A.arrowLink(v.linkText, v.linkUrl))
+},
+{
+  id: 'details',
+  name: 'Detail Rows',
+  group: 'Content',
+  hint: 'Label / value rows — the order-summary pattern. Labels left, values right.',
+  fields: [
+    { key: 'label', label: 'Section label', type: 'text', def: C.dropDetails },
+    { key: 'rows', label: 'Rows', type: 'list', sub: [
+        { key: 'k', label: 'Label', type: 'text', def: C.releases },
+        { key: 'v', label: 'Value', type: 'text', def: L('Friday, 12:00 PM PT', 'Viernes, 12:00 PM (PT)') },
+        { key: 'href', label: 'Value link (optional)', type: 'url', def: '' }
+      ], def: [
+        { k: C.releases, v: L('Friday, 12:00 PM PT', 'Viernes, 12:00 PM (PT)'), href: '' },
+        { k: L('Quantity', 'Cantidad'), v: L('Limited run', 'Edición limitada'), href: '' },
+        { k: L('Where', 'Dónde'), v: 'baezonline.com', href: BRAND.shopUrl }
+      ]
+    },
+    { key: 'note', label: 'Fine print (optional)', type: 'textarea', def: '' }
+  ],
+  render: (v) => {
+    let r = (v.rows || []).map((x, i) => {
+      const pad = i === 0 ? '' : 'padding-top:8px;';
+      const val = x.href
+        ? '<a href="' + esc(x.href) + '" style="color:' + TK.link + ';text-decoration:underline;">' + esc(x.v) + '</a>'
+        : esc(x.v);
+      return '<tr><td style="' + pad + 'font-size:12px;color:' + TK.muted + ';text-align:left;">' + esc(x.k) + '</td>' +
+             '<td style="' + pad + 'font-size:13px;color:' + TK.text + ';text-align:right;">' + val + '</td></tr>';
+    }).join('');
+    if (v.note) r += '<tr><td colspan="2" style="padding-top:8px;font-size:11px;color:' + TK.faint + ';line-height:1.6;">' + nl2br(v.note) + '</td></tr>';
+    return row(A.eyebrow(v.label) + '<table width="100%" cellpadding="0" cellspacing="0">' + r + '</table>', 'padding:18px 0 4px;');
+  }
+},
+{
+  id: 'dropdetails',
+  name: 'Drop Details',
+  group: 'Content',
+  hint: 'Release status, availability and fulfilment — labels and fine print follow the toggles and the email language.',
+  fields: [
+    { key: 'label', label: 'Section label', type: 'text', def: C.dropDetails },
+
+    { key: 'status', label: 'Releases row', type: 'select', options: ['Scheduled', 'Out now', 'Hide this row'], def: 'Scheduled' },
+    { key: 'releaseDate', label: 'Release date & time', type: 'text', def: L('Friday, November 20 at 12:00 PM PT', 'Viernes 20 de noviembre, 12:00 PM (PT)'), showIf: { key: 'status', is: 'Scheduled' } },
+    { key: 'releasedText', label: 'Text when it is out', type: 'text', def: L('Now Available', 'Ya disponible'), showIf: { key: 'status', is: 'Out now' } },
+
+    { key: 'availability', label: 'Availability', type: 'select', options: ['Online Only', 'Online & In-Store', 'Pop-Up Event'], def: 'Online Only' },
+    { key: 'eventDetail', label: 'Pop-up detail (venue, date)', type: 'text', def: '', showIf: { key: 'availability', is: 'Pop-Up Event' } },
+
+    { key: 'fulfillment', label: 'Fulfilment', type: 'select', options: ['In Stock', 'Pre-Order'], def: 'In Stock' },
+    { key: 'shipText', label: 'Ships in', type: 'text', def: '', showIf: { key: 'fulfillment', is: 'In Stock' },
+      help: 'e.g. 3–7 business days. Leave blank to hide the Ships row.' },
+    { key: 'preorderUrl', label: 'Pre-order policy URL', type: 'url', def: BRAND.shippingPolicyUrl, showIf: { key: 'fulfillment', is: 'Pre-Order' } }
+  ],
+  render: (v, c) => {
+    const pre = v.fulfillment === 'Pre-Order';
+    let first = true;
+    /* stacked + centred: label above value. A label/value column pair cannot centre. */
+    const pair = (k, val) => {
+      const h = '<div style="font-size:12px;color:' + TK.muted + ';margin-top:' + (first ? '0' : '12px') + ';">' + k + '</div>' +
+                '<div style="font-size:13px;color:' + TK.text + ';margin-top:2px;">' + val + '</div>';
+      first = false;
+      return h;
+    };
+
+    let r = '';
+
+    /* Always "Releases" — the value carries the tense (a future date, or "Now Available") */
+    if (v.status === 'Out now') r += pair(tr(UI.releases, c), esc(v.releasedText));
+    else if (v.status === 'Scheduled') r += pair(tr(UI.releases, c), esc(v.releaseDate));
+
+    const av = UI.avail[v.availability];
+    r += pair(tr(UI.availability, c), av ? tr(av, c) : esc(v.availability));
+    if (v.availability === 'Pop-Up Event' && v.eventDetail)
+      r += '<div style="font-size:11px;color:' + TK.faint + ';line-height:1.6;margin-top:3px;">' + esc(v.eventDetail) + '</div>';
+
+    if (pre) r += pair(tr(UI.ships, c),
+      '<a href="' + esc(v.preorderUrl) + '" style="color:' + TK.link + ';text-decoration:underline;">' + tr(UI.preorderLink, c) + '</a>');
+    else if (v.shipText) r += pair(tr(UI.ships, c), esc(v.shipText));
+
+    if (pre) r += '<div style="font-size:11px;color:' + TK.faint + ';line-height:1.6;margin-top:14px;">' +
+      '<strong style="color:#999;">' + tr(UI.noteLead, c) + '</strong> ' + tr(UI.preorderNote, c) + '</div>';
+
+    return row('<div style="font-size:11px;color:' + TK.muted + ';font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">' +
+      esc(v.label) + '</div>' + r, 'padding:18px 0 4px;', 'center');
+  }
+},
+{
+  id: 'divider',
+  name: 'Divider',
+  group: 'Content',
+  hint: '1px hairline rule.',
+  fields: [],
+  render: () => '<tr><td style="padding-top:20px;border-top:1px solid ' + TK.hair + ';font-size:0;line-height:0;">&nbsp;</td></tr>'
+},
+{
+  id: 'spacer',
+  name: 'Spacer',
+  group: 'Content',
+  hint: 'Vertical breathing room.',
+  fields: [{ key: 'h', label: 'Height (px)', type: 'number', def: 24 }],
+  render: (v) => '<tr><td style="font-size:0;line-height:0;height:' + (v.h || 24) + 'px;">&nbsp;</td></tr>'
+},
+
+/* =============================== MEDIA =============================== */
+{
+  id: 'image',
+  name: 'Image',
+  group: 'Media',
+  hint: 'Full-width hero or lifestyle shot. Host it on Shopify Files — no local files.',
+  fields: [
+    { key: 'src', label: 'Image URL', type: 'url', def: '' },
+    { key: 'scale', label: 'Size', type: 'range', min: 40, max: 100, step: 1, unit: '%', def: 100,
+      help: 'Shrinks only — email can’t zoom in. To make the subject bigger, re-crop the source image.' },
+    { key: 'alt', label: 'Alt text', type: 'text', def: BRAND.name },
+    { key: 'href', label: 'Links to (optional)', type: 'url', def: BRAND.shopUrl },
+    { key: 'caption', label: 'Caption (optional)', type: 'text', def: '' }
+  ],
+  render: (v) => {
+    const w = Math.round(452 * Math.max(20, Math.min(100, Number(v.scale) || 100)) / 100);
+    let img = v.src
+      ? '<img src="' + esc(v.src) + '" width="' + w + '" alt="' + esc(v.alt) + '" style="display:block;border:0;border-radius:10px;width:100%;max-width:' + w + 'px;height:auto;margin:0 auto;background:#000;">'
+      : placeholder('Image — add a URL', w, 96);
+    if (v.href) img = '<a href="' + esc(v.href) + '" style="text-decoration:none;">' + img + '</a>';
+    if (v.caption) img += '<div style="font-size:11px;color:' + TK.faint + ';line-height:1.6;margin-top:8px;text-align:center;">' + esc(v.caption) + '</div>';
+    return row(img, 'padding-top:20px;', 'center');
+  }
+},
+{
+  id: 'imagePair',
+  name: 'Image Pair',
+  group: 'Media',
+  hint: 'Two images side by side — lookbook / colorway comparison.',
+  fields: [
+    { key: 'aSrc', label: 'Left image URL', type: 'url', def: '' },
+    { key: 'aHref', label: 'Left links to', type: 'url', def: '' },
+    { key: 'bSrc', label: 'Right image URL', type: 'url', def: '' },
+    { key: 'bHref', label: 'Right links to', type: 'url', def: '' }
+  ],
+  render: (v) => {
+    const cell = (src, href, side) => {
+      let img = src
+        ? '<img src="' + esc(src) + '" width="218" alt="" style="display:block;border:0;border-radius:10px;width:100%;max-width:218px;height:auto;margin:0 auto;background:#000;">'
+        : placeholder('Image', 218, 70);
+      if (href) img = '<a href="' + esc(href) + '" style="text-decoration:none;">' + img + '</a>';
+      return '<td width="50%" align="center" style="padding:' + (side === 'l' ? '0 4px 0 0' : '0 0 0 4px') + ';vertical-align:top;">' + img + '</td>';
+    };
+    return row('<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+      cell(v.aSrc, v.aHref, 'l') + cell(v.bSrc, v.bHref, 'r') + '</tr></table>', 'padding-top:20px;');
+  }
+},
+{
+  id: 'productGrid',
+  name: 'Product Grid',
+  group: 'Media',
+  hint: 'Two-up product cards with image, name and price.',
+  fields: [
+    { key: 'label', label: 'Section label (optional)', type: 'text', def: L('In This Drop', 'En este drop') },
+    { key: 'shape', label: 'Match all image shapes', type: 'select',
+      options: ['Square', 'Portrait 4:5', 'Portrait 3:4', 'Landscape 4:3', 'Original'], def: 'Square',
+      help: 'Forces every Shopify CDN image into the same box so products render identically sized. Shopify pads rather than crops on Files URLs, so nothing gets cut off — set the pad colour to match your image background and the padding is invisible.' },
+    { key: 'pad', label: 'Pad colour (hex)', type: 'text', def: 'ffffff',
+      showIfNot: { key: 'shape', is: 'Original' },
+      help: 'ffffff for product shots on white, 000000 for shots on black. No # needed.' },
+    { key: 'items', label: 'Products', type: 'list', sub: [
+        { key: 'img', label: 'Image URL', type: 'url', def: '' },
+        { key: 'scale', label: 'Size', type: 'range', min: 50, max: 100, step: 1, unit: '%', def: 100,
+          help: 'Shrinks only — email can’t zoom in. If a product looks too small, shrink the one next to it instead, or re-crop the source.' },
+        { key: 'title', label: 'Name', type: 'text', def: C.productName },
+        { key: 'price', label: 'Price', type: 'text', def: '$00' },
+        { key: 'href', label: 'Links to', type: 'url', def: BRAND.shopUrl }
+      ], def: [
+        { img: '', scale: 100, title: L('Product One', 'Producto uno'), price: '$00', href: BRAND.shopUrl },
+        { img: '', scale: 100, title: L('Product Two', 'Producto dos'), price: '$00', href: BRAND.shopUrl }
+      ]
+    }
+  ],
+  render: (v) => {
+    const items = v.items || [];
+    const BOX = 218;
+    let out = '';
+    for (let i = 0; i < items.length; i += 2) {
+      const pair = [items[i], items[i + 1]];
+      /* The fixed-height box only earns its keep when the two cells are scaled
+         differently — otherwise it just adds dead space under images on mobile. */
+      const scales = pair.filter(Boolean).map(x => Math.max(20, Math.min(100, Number(x.scale) || 100)));
+      const needBox = scales.length === 2 && scales[0] !== scales[1];
+
+      const cells = pair.map((it, j) => {
+        if (!it) return '<td width="50%"></td>';
+        const pct = Math.max(20, Math.min(100, Number(it.scale) || 100));
+        const w = Math.round(BOX * pct / 100);
+        const src = cdnShape(it.img, v.shape || 'Square', v.pad);
+        const img = src
+          ? '<img src="' + esc(src) + '" width="' + w + '" alt="' + esc(it.title) +
+            '" style="display:block;border:0;border-radius:10px;width:100%;max-width:' + w + 'px;height:auto;margin:0 auto;background:#000;">'
+          : placeholder('Product image', w, 70);
+        const link = '<a href="' + esc(it.href || BRAND.shopUrl) + '" style="text-decoration:none;">' + img + '</a>';
+        const media = needBox
+          ? '<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+            '<td height="' + BOX + '" align="center" valign="middle" style="height:' + BOX + 'px;text-align:center;">' +
+            link + '</td></tr></table>'
+          : link;
+        return '<td width="50%" align="center" style="padding:' + (j === 0 ? '0 4px 12px 0' : '0 0 12px 4px') + ';vertical-align:top;text-align:center;">' +
+          media +
+          '<div style="font-size:13px;color:' + TK.white + ';font-weight:600;margin-top:8px;line-height:1.4;text-align:center;">' + esc(it.title) + '</div>' +
+          '<div style="font-size:12px;color:' + TK.muted + ';margin-top:2px;text-align:center;">' + esc(it.price) + '</div></td>';
+      }).join('');
+      out += '<tr>' + cells + '</tr>';
+    }
+    return row((v.label ? A.eyebrow(v.label) : '') +
+      '<table width="100%" cellpadding="0" cellspacing="0">' + out + '</table>', 'padding-top:22px;');
+  }
+},
+{
+  id: 'productRow',
+  name: 'Product List',
+  group: 'Media',
+  hint: 'Horizontal rows — thumbnail, name, detail line, price.',
+  fields: [
+    { key: 'label', label: 'Section label (optional)', type: 'text', def: L('Featured', 'Destacados') },
+    { key: 'items', label: 'Products', type: 'list', sub: [
+        { key: 'img', label: 'Image URL', type: 'url', def: '' },
+        { key: 'title', label: 'Name', type: 'text', def: C.productName },
+        { key: 'meta', label: 'Detail line', type: 'text', def: L('Black / All sizes', 'Negro / Todas las tallas') },
+        { key: 'price', label: 'Price', type: 'text', def: '$00' },
+        { key: 'href', label: 'Links to', type: 'url', def: BRAND.shopUrl }
+      ], def: [{ img: '', title: C.productName, meta: L('Black / All sizes', 'Negro / Todas las tallas'), price: '$00', href: BRAND.shopUrl }]
+    }
+  ],
+  render: (v) => {
+    const rows = (v.items || []).map((it) =>
+      '<tr>' +
+      (it.img ? '<td width="56" style="padding:10px 12px 10px 0;vertical-align:top;"><a href="' + esc(it.href || BRAND.shopUrl) + '"><img src="' + esc(it.img) + '" width="48" height="48" alt="" style="display:block;border:0;border-radius:8px;background:#000;"></a></td>' : '') +
+      '<td style="padding:10px 0;font-size:13px;color:' + TK.text + ';vertical-align:top;text-align:left;">' +
+        '<a href="' + esc(it.href || BRAND.shopUrl) + '" style="color:' + TK.white + ';text-decoration:none;">' + esc(it.title) + '</a>' +
+        (it.meta ? '<div style="font-size:11px;color:' + TK.faint + ';margin-top:3px;line-height:1.5;">' + esc(it.meta) + '</div>' : '') +
+      '</td>' +
+      '<td style="padding:10px 0;font-size:13px;color:' + TK.text + ';text-align:right;white-space:nowrap;vertical-align:top;">' + esc(it.price) + '</td>' +
+      '</tr>').join('');
+    return row((v.label ? A.eyebrow(v.label) : '') +
+      '<table width="100%" cellpadding="0" cellspacing="0">' + rows + '</table>', 'padding-top:12px;border-top:1px solid ' + TK.hair + ';');
+  }
+},
+
+/* ============================= COMMERCE ============================= */
+{
+  id: 'code',
+  name: 'Discount Code',
+  group: 'Commerce',
+  hint: 'Big code chip with terms underneath.',
+  fields: [
+    { key: 'label', label: 'Label above code', type: 'text', def: L('Use Code At Checkout', 'Usa el código al pagar') },
+    { key: 'code', label: 'Code', type: 'text', def: CODE_PLACEHOLDER },
+    { key: 'desc', label: 'What it does', type: 'text', def: L('20% off sitewide', '20% de descuento en toda la tienda') },
+    { key: 'terms', label: 'Terms / expiry', type: 'textarea', def: L('Ends Sunday at 11:59 PM PT. Cannot be combined with other offers.', 'Termina el domingo a las 11:59 PM (PT). No acumulable con otras promociones.') },
+    { key: 'btnText', label: 'Button text', type: 'text', def: L('Shop The Sale', 'Comprar la oferta') },
+    { key: 'btnUrl', label: 'Button URL', type: 'url', def: BRAND.shopUrl }
+  ],
+  render: (v) =>
+    row(A.eyebrow(v.label) +
+      '<div style="background:' + TK.well + ';border:1px dashed ' + TK.rule + ';border-radius:8px;padding:18px 16px;text-align:center;">' +
+        '<div style="font-size:24px;color:' + TK.white + ';font-weight:700;letter-spacing:3px;font-family:' + TK.font + ';">' + esc(v.code) + '</div>' +
+        (v.desc ? '<div style="font-size:12px;color:' + TK.green + ';margin-top:6px;font-weight:600;">' + esc(v.desc) + '</div>' : '') +
+      '</div>' +
+      (v.terms ? '<div style="font-size:11px;color:' + TK.faint + ';line-height:1.6;margin-top:8px;">' + nl2br(v.terms) + '</div>' : '') +
+      (v.btnText ? '<div style="margin-top:14px;">' + A.buttonSolid(esc(v.btnText), v.btnUrl) + '</div>' : ''),
+      'padding-top:22px;')
+},
+{
+  id: 'countdown',
+  name: 'Launch Date',
+  group: 'Commerce',
+  hint: 'Static date/time card. Email clients cannot run live timers.',
+  fields: [
+    { key: 'label', label: 'Label', type: 'text', def: L('Drop Date', 'Fecha del drop') },
+    { key: 'date', label: 'Date line', type: 'text', def: L('FRIDAY, NOVEMBER 20', 'VIERNES 20 DE NOVIEMBRE') },
+    { key: 'time', label: 'Time line', type: 'text', def: '12:00 PM PT' },
+    { key: 'note', label: 'Note (optional)', type: 'text', def: L('Set a reminder — this one will move fast.', 'Pon tu recordatorio: esto vuela.') }
+  ],
+  render: (v) =>
+    row('<div style="background:' + TK.well + ';border:1px solid ' + TK.rule + ';border-radius:10px;padding:20px 16px;text-align:center;">' +
+        (v.label ? '<div style="font-size:11px;color:' + TK.muted + ';font-weight:700;letter-spacing:1px;text-transform:uppercase;">' + esc(v.label) + '</div>' : '') +
+        '<div style="font-size:20px;color:' + TK.white + ';font-weight:700;letter-spacing:1px;margin-top:8px;">' + esc(v.date) + '</div>' +
+        (v.time ? '<div style="font-size:14px;color:' + TK.text + ';margin-top:4px;letter-spacing:1px;">' + esc(v.time) + '</div>' : '') +
+        (v.note ? '<div style="font-size:11px;color:' + TK.faint + ';margin-top:10px;line-height:1.6;">' + esc(v.note) + '</div>' : '') +
+      '</div>', 'padding-top:22px;')
+},
+
+/* ============================== ACTION ============================== */
+{
+  id: 'button',
+  name: 'Button',
+  group: 'Action',
+  hint: 'Full-width CTA. Solid = primary, outline = secondary.',
+  fields: [
+    { key: 'text', label: 'Button text', type: 'text', def: C.shopNow },
+    { key: 'url', label: 'URL', type: 'url', def: BRAND.shopUrl },
+    { key: 'style', label: 'Style', type: 'select', options: ['Solid (white)', 'Outline (dark)'], def: 'Solid (white)' }
+  ],
+  render: (v) =>
+    row(v.style === 'Outline (dark)' ? A.button(esc(v.text), v.url) : A.buttonSolid(esc(v.text), v.url), 'padding-top:20px;')
+},
+{
+  id: 'buttonPair',
+  name: 'Button Pair',
+  group: 'Action',
+  hint: 'Two buttons side by side.',
+  fields: [
+    { key: 'aText', label: 'Left text', type: 'text', def: L('Shop New', 'Lo nuevo') },
+    { key: 'aUrl', label: 'Left URL', type: 'url', def: BRAND.shopUrl },
+    { key: 'bText', label: 'Right text', type: 'text', def: L('Shop All', 'Ver todo') },
+    { key: 'bUrl', label: 'Right URL', type: 'url', def: BRAND.shopUrl }
+  ],
+  render: (v) =>
+    row('<table width="100%" cellpadding="0" cellspacing="0"><tr>' +
+      '<td width="50%" style="padding:0 4px 0 0;">' + A.button(esc(v.aText), v.aUrl) + '</td>' +
+      '<td width="50%" style="padding:0 0 0 4px;">' + A.button(esc(v.bText), v.bUrl) + '</td>' +
+      '</tr></table>', 'padding-top:20px;')
+},
+{
+  id: 'footer',
+  name: 'Footer Grid',
+  group: 'Action',
+  hint: 'Closing line plus a two-column button grid. Keep it last. Shopify still appends its own social / address / unsubscribe footer below this — that one is required and cannot be removed.',
+  fields: [
+    { key: 'tagline', label: 'Brand tagline (optional)', type: 'text', def: '' },
+    { key: 'closing', label: 'Closing line', type: 'textarea', def: L('Questions? Visit our Help Center. Thank you for your support.', '¿Dudas? Visita nuestro Centro de Ayuda. Gracias por tu apoyo.') },
+    { key: 'buttons', label: 'Buttons', type: 'list',
+      help: 'A button with no URL is left out of the email.',
+      sub: [
+        { key: 'text', label: 'Label', type: 'text', def: '' },
+        { key: 'url', label: 'URL', type: 'url', def: '' }
+      ], def: [
+        { text: L('Shop BAEZ', 'Comprar en BAEZ'), url: BRAND.shopUrl },
+        { text: L('Help Center', 'Centro de Ayuda'), url: BRAND.helpUrl },
+        { text: 'Instagram', url: BRAND.igUrl },
+        { text: L('Subscribe to Emails and Texts', 'Suscríbete a correos y SMS'), url: BRAND.subscribeUrl }
+      ]
+    }
+  ],
+  render: (v) => {
+    const btns = (v.buttons || []).filter(b => b && b.text && b.url);
+    let h = '';
+    /* Tagline sits close under the rule; the closing line gets more air below it. */
+    if (v.tagline || v.closing) {
+      h += '<tr><td style="padding-top:' + (v.tagline ? '20px' : '26px') + ';border-top:1px solid ' + TK.hair + ';">' +
+        (v.tagline ? '<div style="font-size:9px;color:' + TK.muted + ';font-weight:700;letter-spacing:.6px;line-height:1.6;margin:0;">' + esc(v.tagline) + '</div>' : '') +
+        (v.closing ? '<p style="font-size:12px;color:' + TK.body + ';margin:' + (v.tagline ? '20px' : '14px') + ' 0 0;line-height:1.7;">' + nl2br(v.closing) + '</p>' : '') +
+        '</td></tr>';
+    }
+    if (btns.length) {
+      let rows = '';
+      for (let i = 0; i < btns.length; i += 2) {
+        const a = btns[i], b = btns[i + 1];
+        const pb = (i + 2 >= btns.length) ? '0' : '8px';
+        rows += b
+          ? '<tr><td width="50%" style="padding:0 4px ' + pb + ' 0;">' + A.button(esc(a.text), a.url) + '</td>' +
+            '<td width="50%" style="padding:0 0 ' + pb + ' 4px;">' + A.button(esc(b.text), b.url) + '</td></tr>'
+          : '<tr><td colspan="2" style="padding:0 0 ' + pb + ' 0;">' + A.button(esc(a.text), a.url) + '</td></tr>';
+      }
+      h += '<tr><td style="padding-top:20px;"><table width="100%" cellpadding="0" cellspacing="0">' + rows + '</table></td></tr>';
+    }
+    return h;
+  }
+}
+];
+
+const BLOCK_BY_ID = {};
+BLOCKS.forEach(b => { BLOCK_BY_ID[b.id] = b; });
+
+/* ---------- pre-send checks ----------
+   Things that should never reach a customer list: empty image slots and
+   starter placeholders that were never replaced. */
+function lint(tpl) {
+  const out = [];
+  const isAny = (val, p) => val === p.en || val === p.es;
+  (tpl.blocks || []).forEach(b => {
+    const v = b.values || {};
+    if (b.type === 'image' && !v.src) out.push('Image has no URL');
+    if (b.type === 'imagePair' && (!v.aSrc || !v.bSrc)) out.push('Image Pair is missing an image URL');
+    if (b.type === 'productGrid') {
+      const n = (v.items || []).filter(i => !i.img).length;
+      if (n) out.push('Product Grid: ' + n + ' product' + (n > 1 ? 's' : '') + ' with no image');
+    }
+    if (b.type === 'lockup' && isAny(v.collection, C.collection)) out.push('Collection Lockup still says “' + v.collection + '”');
+    if (b.type === 'shipbar' && isAny(v.text, C.announce)) out.push('Announcement Bar still has placeholder text');
+    if (b.type === 'code' && v.code === CODE_PLACEHOLDER) out.push('Discount Code is still ' + CODE_PLACEHOLDER);
+  });
+  return out;
+}
+
+/* Flip untouched default copy from one language to the other. Only free-text
+   fields are considered — select values are keys and must never change. */
+function translateDefaults(tpl, from, to) {
+  if (from === to) return;
+  const map = {};
+  PAIRS.forEach(p => { map[p[from]] = p[to]; });
+  const sw = (s) => (typeof s === 'string' && Object.prototype.hasOwnProperty.call(map, s)) ? map[s] : s;
+  const s = tpl.settings || {};
+  ['eyebrow', 'subject', 'preheader'].forEach(k => { s[k] = sw(s[k]); });
+  tpl.name = sw(tpl.name);
+  (tpl.blocks || []).forEach(b => {
+    const def = BLOCK_BY_ID[b.type];
+    if (!def) return;
+    def.fields.forEach(f => {
+      if (f.type === 'text' || f.type === 'textarea') b.values[f.key] = sw(b.values[f.key]);
+      else if (f.type === 'list') (b.values[f.key] || []).forEach(it => {
+        f.sub.forEach(sf => { if (sf.type === 'text') it[sf.key] = sw(it[sf.key]); });
+      });
+    });
+  });
+}
+
+/* ---------- document assembly ----------
+   Shopify Messaging already renders the logo band above and the social /
+   address / unsubscribe footer below, so the logo header is OFF by default.
+   The campaign tag ("NEW DROP") then leads the card instead. */
+/* display:block images ignore td align — they need an explicit margin */
+const blockMargin = (al) =>
+  al === 'right' ? 'margin:0 0 0 auto;' : al === 'left' ? 'margin:0;' : 'margin:0 auto;';
+
+const tagDiv = (text, al) =>
+  '<div style="font-size:12px;color:' + TK.muted +
+  ';font-weight:700;letter-spacing:1.6px;text-transform:uppercase;text-align:' + al + ';">' +
+  esc(text) + '</div>';
+
+/* Optional logo header. Uses BRAND.logo when set, otherwise a text wordmark.
+   Logo and campaign tag each get their own alignment; the tag stacks underneath. */
+function renderHeader(s) {
+  if (!s.showHeader) return '';
+  const la = s.logoAlign || 'center';
+  const ta = s.tagAlign || 'center';
+  const mark = BRAND.logo
+    ? '<img src="' + BRAND.logo + '" width="72" height="72" alt="' + BRAND.name + '" style="display:block;border:0;border-radius:12px;' + blockMargin(la) + '">'
+    : '<span style="font-size:26px;font-weight:800;letter-spacing:6px;line-height:1;color:' + TK.white + ';">' + BRAND.name + '</span>';
+  let rows = '<tr><td align="' + la + '" style="text-align:' + la + ';">' +
+    '<a href="' + esc(s.logoUrl || BRAND.shopUrl) + '" style="text-decoration:none;">' + mark + '</a></td></tr>';
+  if (s.showTag !== false && s.eyebrow)
+    rows += '<tr><td align="' + ta + '" style="padding-top:14px;text-align:' + ta + ';">' + tagDiv(s.eyebrow, ta) + '</td></tr>';
+  return '<tr><td align="center" style="padding:44px 20px 20px;">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" align="center" style="width:100%;max-width:' + TK.width + 'px;margin:0 auto;">' +
+    rows + '</table></td></tr>';
+}
+
+/* With the logo header off, the campaign tag leads the card instead. */
+function renderTag(s) {
+  if (s.showTag === false || s.showHeader || !s.eyebrow) return '';
+  const al = s.tagAlign || 'center';
+  return '<tr><td align="' + al + '" style="padding-bottom:14px;text-align:' + al + ';">' +
+    tagDiv(s.eyebrow, al) + '</td></tr>';
+}
+
+/* Body only — this is what gets pasted into Shopify Messaging custom Liquid,
+   between Shopify's own header and footer. */
+function buildBody(tpl) {
+  const s = tpl.settings || {};
+  const ctx = { lang: s.lang === 'es' ? 'es' : 'en' };
+  const rows = (tpl.blocks || []).map(b => {
+    const def = BLOCK_BY_ID[b.type];
+    return def ? def.render(b.values || {}, ctx) : '';
+  }).join('\n      ');
+
+  return '<!-- ============================================================= -->\n' +
+    '<!-- ' + BRAND.name + ' — ' + esc(tpl.name || 'Marketing Email').replace(/-{2,}/g, '-') + ' -->\n' +
+    '<!-- Paste into Shopify Messaging → Add section → Custom → Custom Liquid -->\n' +
+    '<!-- Shopify renders the logo band above and the unsubscribe footer below. -->\n' +
+    '<!-- ============================================================= -->\n' +
+    /* margin:0 auto is what actually centres the card. A table with width:100% +
+       max-width is a block box: <td align="center"> does NOT centre it, and Shopify
+       renders it flush left without this. Padding lives on a td, never on the
+       width:100% table itself. bgcolor/align attributes survive CSS sanitisers. */
+    '<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#000000" align="center" style="width:100%;background:' + TK.canvas + ';font-family:' + TK.font + ';">\n' +
+    '  ' + renderHeader(s) + '\n' +
+    '  <tr><td align="center" style="padding:' + (s.showHeader ? '0' : '28px') + ' 20px 48px;">\n' +
+    '    <table width="100%" cellpadding="0" cellspacing="0" align="center" bgcolor="#111111" style="width:100%;max-width:' + TK.width + 'px;margin:0 auto;background:' + TK.card + ';border-radius:14px;font-family:' + TK.font + ';">\n' +
+    '      <tr><td style="padding:30px 34px;' + (s.align === 'left' ? '' : 'text-align:center;') + '">\n' +
+    '        <table width="100%" cellpadding="0" cellspacing="0">\n' +
+    '      ' + renderTag(s) + '\n      ' + rows + '\n' +
+    '        </table>\n' +
+    '      </td></tr>\n' +
+    '    </table>\n' +
+    '  </td></tr>\n' +
+    '</table>';
+}
+
+/* Full standalone document — used for the preview pane and .html export */
+function buildFull(tpl) {
+  const lang = (tpl.settings && tpl.settings.lang) === 'es' ? 'es' : 'en';
+  return '<!DOCTYPE html><html lang="' + lang + '"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+    '<title>' + esc(tpl.name || BRAND.name) + '</title></head>' +
+    '<body style="margin:0;padding:0;background:' + TK.canvas + ';">' +
+    buildBody(tpl) + '</body></html>';
+}
+
+</script>
+<script>
+/* =========================================================================
+   BAEZ Email Creator — App
+   ========================================================================= */
+
+/* ---------------- storage adapter ----------------
+   Runs on localStorage today. Paste a Supabase URL + anon key in Settings
+   and every call switches to the REST API with zero other changes.
+--------------------------------------------------- */
+const CFG_KEY = 'bz_ec_supabase';
+const LOCAL_KEY = 'bz_ec_templates';
+const LANG_KEY = 'bz_ec_lang';
+const TABLE = 'bz_email_templates';
+
+const Store = {
+  cfg() { try { return JSON.parse(localStorage.getItem(CFG_KEY) || 'null'); } catch (e) { return null; } },
+  setCfg(c) { c ? localStorage.setItem(CFG_KEY, JSON.stringify(c)) : localStorage.removeItem(CFG_KEY); },
+  get mode() { const c = this.cfg(); return (c && c.url && c.key) ? 'supabase' : 'local'; },
+
+  _headers() {
+    const c = this.cfg();
+    return { apikey: c.key, Authorization: 'Bearer ' + c.key, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+  },
+  _local() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]'); } catch (e) { return []; } },
+  _saveLocal(a) { localStorage.setItem(LOCAL_KEY, JSON.stringify(a)); },
+
+  async list() {
+    if (this.mode === 'local') return this._local().sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+    const c = this.cfg();
+    const r = await fetch(c.url + '/rest/v1/' + TABLE + '?select=*&order=updated_at.desc', { headers: this._headers() });
+    if (!r.ok) throw new Error('Supabase list failed (' + r.status + '): ' + await r.text());
+    return r.json();
+  },
+
+  async save(tpl) {
+    tpl.updated_at = new Date().toISOString();
+    if (this.mode === 'local') {
+      const all = this._local();
+      const i = all.findIndex(t => t.id === tpl.id);
+      if (i >= 0) all[i] = tpl; else all.push(tpl);
+      this._saveLocal(all);
+      return tpl;
+    }
+    const c = this.cfg();
+    const r = await fetch(c.url + '/rest/v1/' + TABLE + '?on_conflict=id', {
+      method: 'POST',
+      headers: Object.assign({}, this._headers(), { Prefer: 'resolution=merge-duplicates,return=representation' }),
+      body: JSON.stringify([tpl])
+    });
+    if (!r.ok) throw new Error('Supabase save failed (' + r.status + '): ' + await r.text());
+    return (await r.json())[0];
+  },
+
+  async remove(id) {
+    if (this.mode === 'local') { this._saveLocal(this._local().filter(t => t.id !== id)); return; }
+    const c = this.cfg();
+    const r = await fetch(c.url + '/rest/v1/' + TABLE + '?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: this._headers() });
+    if (!r.ok) throw new Error('Supabase delete failed (' + r.status + ')');
+  }
+};
+
+/* ---------------- starter templates ---------------- */
+const uid = () => 'tpl_' + Math.random().toString(36).slice(2, 10);
+const bid = () => 'b_' + Math.random().toString(36).slice(2, 9);
+
+/* The language new copy is created in: the open template's, else the last one used. */
+function curLang() {
+  if (tpl && tpl.settings && tpl.settings.lang) return tpl.settings.lang === 'es' ? 'es' : 'en';
+  try { return localStorage.getItem(LANG_KEY) === 'es' ? 'es' : 'en'; } catch (e) { return 'en'; }
+}
+
+function mkBlock(type, overrides, lang) {
+  const def = BLOCK_BY_ID[type];
+  const lg = lang || curLang();
+  const values = {};
+  (def.fields || []).forEach(f => {
+    const d = loc(f.def, lg);
+    values[f.key] = (f.type === 'list') ? JSON.parse(JSON.stringify(d || [])) : d;
+  });
+  Object.assign(values, loc(overrides || {}, lg));
+  return { id: bid(), type: type, values: values };
+}
+
+const baseSettings = (lang, extra) => Object.assign({
+  lang: lang, showHeader: false, eyebrow: '', logoUrl: BRAND.shopUrl, align: 'center',
+  showTag: true, tagAlign: 'center', logoAlign: 'center', subject: '', preheader: ''
+}, extra || {});
+
+/* Mirrors the drop email as it is actually sent: tag, lockup, hero, one CTA,
+   drop details. Announcement Bar, Product Grid and Footer Grid are one click away. */
+function starterDrop(lang) {
+  return {
+    id: uid(), name: loc(STR.dropName, lang), kind: 'drop',
+    settings: baseSettings(lang, { eyebrow: loc(STR.newDrop, lang), subject: loc(STR.dropSubject, lang) }),
+    blocks: [
+      mkBlock('lockup', {}, lang),
+      mkBlock('image', { alt: STR.heroAlt }, lang),
+      mkBlock('button', {}, lang),
+      mkBlock('dropdetails', { status: 'Hide this row' }, lang)
+    ]
+  };
+}
+
+function starterSale(lang) {
+  return {
+    id: uid(), name: loc(STR.saleName, lang), kind: 'sale',
+    settings: baseSettings(lang, { eyebrow: loc(STR.limited, lang), subject: loc(STR.saleSubject, lang) }),
+    blocks: [
+      mkBlock('headline', { eyebrow: '', title: STR.saleTitle, body: STR.saleBody }, lang),
+      mkBlock('code', {}, lang),
+      mkBlock('productRow', { label: STR.movingFast }, lang),
+      mkBlock('notice', { strong: STR.headsUp, body: STR.saleNotice }, lang),
+      mkBlock('policy', { title: STR.returnTitle, body: STR.returnBody, linkText: STR.returnLink, linkUrl: BRAND.returnPolicyUrl }, lang),
+      mkBlock('footer', {}, lang)
+    ]
+  };
+}
+
+function starterBlank(lang) {
+  return {
+    id: uid(), name: loc(STR.blankName, lang), kind: 'custom',
+    settings: baseSettings(lang),
+    blocks: [mkBlock('headline', {}, lang), mkBlock('button', {}, lang), mkBlock('footer', {}, lang)]
+  };
+}
+
+/* ---------------- app state ---------------- */
+let tpl = null;
+let selected = null;
+let saved = [];
+
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+function toast(msg, bad) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (bad ? ' bad' : '');
+  clearTimeout(t._t); t._t = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+
+/* ---------------- palette ---------------- */
+function renderPalette() {
+  const groups = {};
+  BLOCKS.forEach(b => { (groups[b.group] = groups[b.group] || []).push(b); });
+  $('#palette').innerHTML = Object.keys(groups).map(g =>
+    '<div class="pgroup"><div class="plabel">' + g + '</div>' +
+    groups[g].map(b => '<button class="pitem" data-add="' + b.id + '" title="' + b.hint.replace(/"/g, '&quot;') + '">' +
+      '<span>' + b.name + '</span><span class="plus">+</span></button>').join('') +
+    '</div>').join('');
+}
+
+/* ---------------- canvas (block list) ---------------- */
+function renderCanvas() {
+  const list = $('#blocklist');
+  if (!tpl.blocks.length) {
+    list.innerHTML = '<div class="empty">No blocks yet.<br>Add one from the left.</div>';
+    return;
+  }
+  list.innerHTML = tpl.blocks.map((b, i) => {
+    const def = BLOCK_BY_ID[b.type] || { name: b.type };
+    const isSel = b.id === selected;
+    const pinned = b.type === 'shipbar';
+    return '<div class="bcard' + (isSel ? ' sel' : '') + (pinned ? ' pin' : '') + '" data-sel="' + b.id + '">' +
+      '<div class="brow">' +
+      (pinned
+        ? '<span class="grip lock" title="Announcement Bar stays at the top">&#9679;</span>'
+        : '<span class="grip" draggable="true" data-grip="' + b.id + '" title="Drag to reorder">&#8942;&#8942;</span>') +
+      '<span class="bname">' + def.name + '</span>' +
+      '<span class="bacts">' +
+        '<button data-mv="up" data-id="' + b.id + '" ' + (i === 0 ? 'disabled' : '') + ' title="Move up">&#9650;</button>' +
+        '<button data-mv="dn" data-id="' + b.id + '" ' + (i === tpl.blocks.length - 1 ? 'disabled' : '') + ' title="Move down">&#9660;</button>' +
+        '<button data-dup="' + b.id + '" title="Duplicate">&#10697;</button>' +
+        '<button data-del="' + b.id + '" class="dan" title="Delete">&times;</button>' +
+      '</span></div>' +
+      (isSel ? '<div class="bedit">' + renderFields(b) + '</div>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function renderFields(b) {
+  const def = BLOCK_BY_ID[b.type];
+  if (!def || !def.fields.length) return '<div class="nofields">No settings.</div>';
+  return def.fields.filter(f =>
+    (!f.showIf || b.values[f.showIf.key] === f.showIf.is) &&
+    (!f.showIfNot || b.values[f.showIfNot.key] !== f.showIfNot.is)
+  ).map(f => {
+    const v = b.values[f.key];
+    const nm = 'data-bid="' + b.id + '" data-key="' + f.key + '"';
+    if (f.type === 'textarea') return fw(f, '<textarea ' + nm + ' rows="3">' + escHtml(v) + '</textarea>');
+    if (f.type === 'number') return fw(f, '<input type="number" ' + nm + ' value="' + escHtml(v) + '">');
+    if (f.type === 'select') return fw(f, '<select ' + nm + '>' + f.options.map(o => '<option' + (o === v ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>');
+    if (f.type === 'range') return rangeField(f, v, nm);
+    if (f.type === 'list') return renderList(b, f, v || []);
+    return fw(f, '<input type="text" ' + nm + ' value="' + escHtml(v) + '"' + (f.type === 'url' ? ' placeholder="https://"' : '') + '>');
+  }).join('');
+}
+
+/* slider + live readout + reset */
+function rangeField(f, v, nm) {
+  const val = (v == null || v === '') ? f.def : v;
+  return '<label class="fld rng"><span>' + f.label +
+    '<b class="rv">' + val + (f.unit || '') + '</b></span>' +
+    '<input type="range" ' + nm + ' min="' + f.min + '" max="' + f.max + '" step="' + (f.step || 1) + '" value="' + escHtml(val) + '">' +
+    (f.help ? '<em class="rhelp">' + f.help + '</em>' : '') + '</label>';
+}
+
+function fw(f, input) {
+  return '<label class="fld"><span>' + f.label + '</span>' + input +
+    (f.help ? '<em class="rhelp">' + f.help + '</em>' : '') + '</label>';
+}
+function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function renderList(b, f, arr) {
+  const items = arr.map((it, i) =>
+    '<div class="litem"><div class="lhead"><span>' + f.label.replace(/s$/, '') + ' ' + (i + 1) + '</span>' +
+    '<span class="bacts"><button data-lmv="up" data-bid="' + b.id + '" data-key="' + f.key + '" data-i="' + i + '" ' + (i === 0 ? 'disabled' : '') + '>&#9650;</button>' +
+    '<button data-lmv="dn" data-bid="' + b.id + '" data-key="' + f.key + '" data-i="' + i + '" ' + (i === arr.length - 1 ? 'disabled' : '') + '>&#9660;</button>' +
+    '<button class="dan" data-lrm data-bid="' + b.id + '" data-key="' + f.key + '" data-i="' + i + '">&times;</button></span></div>' +
+    f.sub.map(sf => {
+      const snm = 'data-bid="' + b.id + '" data-key="' + f.key + '" data-i="' + i + '" data-sub="' + sf.key + '"';
+      if (sf.type === 'range') return rangeField(sf, it[sf.key], snm);
+      return '<label class="fld"><span>' + sf.label + '</span><input type="text" ' + snm + ' value="' + escHtml(it[sf.key]) + '"></label>';
+    }).join('') +
+    '</div>').join('');
+  return '<div class="lwrap"><div class="llabel">' + f.label + '</div>' +
+    (f.help ? '<div class="lhelp">' + f.help + '</div>' : '') + items +
+    '<button class="ladd" data-ladd data-bid="' + b.id + '" data-key="' + f.key + '">+ Add ' + f.label.replace(/s$/, '') + '</button></div>';
+}
+
+/* ---------------- preview ---------------- */
+let previewTimer = null;
+function renderPreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    $('#frame').srcdoc = buildFull(tpl);
+    const body = buildBody(tpl);
+    $('#codeout').textContent = body;
+    $('#sizehint').textContent = (new Blob([body]).size / 1024).toFixed(1) + ' KB';
+    const issues = lint(tpl);
+    const bar = $('#lintbar');
+    bar.className = issues.length ? 'on' : '';
+    bar.innerHTML = issues.length
+      ? '<strong>Fix before sending (' + issues.length + '):</strong> ' + issues.map(escHtml).join(' &middot; ')
+      : '';
+  }, 120);
+}
+
+/* ---------------- meta bar ---------------- */
+function renderMeta() {
+  $('#tplname').value = tpl.name || '';
+  $('#lang').value = tpl.settings.lang === 'es' ? 'es' : 'en';
+  $('#eyebrow').value = (tpl.settings && tpl.settings.eyebrow) || '';
+  $('#subject').value = (tpl.settings && tpl.settings.subject) || '';
+  $('#preheader').value = (tpl.settings && tpl.settings.preheader) || '';
+  $('#showheader').checked = tpl.settings.showHeader === true;
+  $('#showtag').checked = tpl.settings.showTag !== false;
+  $('#tagalign').value = tpl.settings.tagAlign || 'center';
+  $('#logoalign').value = tpl.settings.logoAlign || 'center';
+  $('#aligncenter').checked = (tpl.settings.align || 'center') === 'center';
+}
+
+function renderAll() { renderMeta(); renderCanvas(); renderPreview(); }
+
+/* ---------------- saved list ---------------- */
+async function refreshSaved() {
+  try {
+    saved = await Store.list();
+  } catch (e) { saved = []; toast(e.message, true); }
+  $('#savedlist').innerHTML = saved.length
+    ? saved.map(t => '<div class="sitem' + (t.id === tpl.id ? ' cur' : '') + '"><button class="sopen" data-open="' + t.id + '">' +
+        '<span class="sname">' + escHtml(t.name) + '</span><span class="smeta">' + (t.kind || 'custom') + ' · ' + ((t.updated_at || '').slice(0, 10)) + '</span></button>' +
+        '<button class="dan srm" data-rm="' + t.id + '">&times;</button></div>').join('')
+    : '<div class="empty sm">Nothing saved yet.</div>';
+  $('#modebadge').textContent = Store.mode === 'supabase' ? 'SUPABASE' : 'LOCAL';
+  $('#modebadge').className = 'badge ' + (Store.mode === 'supabase' ? 'ok' : '');
+}
+
+/* ---------------- events ---------------- */
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button');
+  if (!t) {
+    const card = e.target.closest('[data-sel]');
+    if (card && !e.target.closest('.bedit')) { selected = card.dataset.sel === selected ? null : card.dataset.sel; renderCanvas(); }
+    return;
+  }
+
+  if (t.dataset.add) {
+    /* The shipping bar is a top-of-email strip — one only, always first. */
+    if (t.dataset.add === 'shipbar') {
+      if (tpl.blocks.some(x => x.type === 'shipbar')) { toast('Announcement Bar is already at the top', true); return; }
+      const b = mkBlock('shipbar');
+      tpl.blocks.unshift(b); selected = b.id; renderAll();
+      return;
+    }
+    const b = mkBlock(t.dataset.add);
+    let at = selected ? tpl.blocks.findIndex(x => x.id === selected) + 1 : tpl.blocks.length;
+    if (tpl.blocks[0] && tpl.blocks[0].type === 'shipbar') at = Math.max(at, 1);
+    tpl.blocks.splice(at, 0, b);
+    selected = b.id; renderAll();
+    return;
+  }
+  if (t.dataset.mv) {
+    const i = tpl.blocks.findIndex(x => x.id === t.dataset.id);
+    const j = t.dataset.mv === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= tpl.blocks.length) return;
+    if (tpl.blocks[i].type === 'shipbar' || tpl.blocks[j].type === 'shipbar') {
+      toast('Announcement Bar stays at the top', true); return;
+    }
+    const [x] = tpl.blocks.splice(i, 1); tpl.blocks.splice(j, 0, x);
+    renderCanvas(); renderPreview(); return;
+  }
+  if (t.dataset.dup) {
+    const i = tpl.blocks.findIndex(x => x.id === t.dataset.dup);
+    const c = JSON.parse(JSON.stringify(tpl.blocks[i])); c.id = bid();
+    tpl.blocks.splice(i + 1, 0, c); selected = c.id; renderAll(); return;
+  }
+  if (t.dataset.del) {
+    tpl.blocks = tpl.blocks.filter(x => x.id !== t.dataset.del);
+    if (selected === t.dataset.del) selected = null;
+    renderAll(); return;
+  }
+  if (t.hasAttribute('data-ladd')) {
+    const b = tpl.blocks.find(x => x.id === t.dataset.bid);
+    const f = BLOCK_BY_ID[b.type].fields.find(x => x.key === t.dataset.key);
+    const blank = {}; f.sub.forEach(sf => { const d = loc(sf.def, curLang()); blank[sf.key] = d || ''; });
+    (b.values[t.dataset.key] = b.values[t.dataset.key] || []).push(blank);
+    renderCanvas(); renderPreview(); return;
+  }
+  if (t.hasAttribute('data-lrm')) {
+    const b = tpl.blocks.find(x => x.id === t.dataset.bid);
+    b.values[t.dataset.key].splice(+t.dataset.i, 1);
+    renderCanvas(); renderPreview(); return;
+  }
+  if (t.dataset.lmv) {
+    const b = tpl.blocks.find(x => x.id === t.dataset.bid);
+    const arr = b.values[t.dataset.key]; const i = +t.dataset.i;
+    const j = t.dataset.lmv === 'up' ? i - 1 : i + 1;
+    if (j < 0 || j >= arr.length) return;
+    const [x] = arr.splice(i, 1); arr.splice(j, 0, x);
+    renderCanvas(); renderPreview(); return;
+  }
+  if (t.dataset.open) {
+    const found = saved.find(x => x.id === t.dataset.open);
+    if (found) { tpl = JSON.parse(JSON.stringify(found)); tpl.settings = tpl.settings || {}; selected = null; renderAll(); refreshSaved(); toast('Loaded “' + tpl.name + '”'); }
+    return;
+  }
+  if (t.dataset.rm) {
+    if (!confirm('Delete this saved template?')) return;
+    await Store.remove(t.dataset.rm); refreshSaved(); toast('Deleted'); return;
+  }
+  if (t.dataset.copy) {
+    const el = $('#' + t.dataset.copy);
+    if (!el || !el.value) { toast('Nothing to copy', true); return; }
+    try { await navigator.clipboard.writeText(el.value); }
+    catch (err) { el.select(); document.execCommand('copy'); }
+    toast(t.dataset.copy === 'subject' ? 'Subject copied' : 'Preheader copied');
+    return;
+  }
+});
+
+document.addEventListener('input', (e) => {
+  const el = e.target;
+  if (el.dataset.bid) {
+    const b = tpl.blocks.find(x => x.id === el.dataset.bid);
+    if (!b) return;
+    const num = el.type === 'number' || el.type === 'range';
+    const val = num ? +el.value : el.value;
+    if (el.dataset.sub != null) b.values[el.dataset.key][+el.dataset.i][el.dataset.sub] = val;
+    else b.values[el.dataset.key] = val;
+    /* live readout next to a slider, without re-rendering the panel (that would drop focus) */
+    if (el.type === 'range') {
+      const badge = el.parentElement.querySelector('.rv');
+      if (badge) badge.textContent = el.value + (badge.textContent.replace(/[\d.]/g, '') || '');
+    }
+    renderPreview();
+    return;
+  }
+  if (el.id === 'tplname') { tpl.name = el.value; return; }
+  if (el.id === 'eyebrow') { tpl.settings.eyebrow = el.value; renderPreview(); return; }
+  if (el.id === 'aligncenter') { tpl.settings.align = el.checked ? 'center' : 'left'; renderPreview(); return; }
+  if (el.id === 'subject') { tpl.settings.subject = el.value; return; }
+  if (el.id === 'preheader') { tpl.settings.preheader = el.value; return; }
+});
+
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'lang') {
+    const from = tpl.settings.lang === 'es' ? 'es' : 'en', to = e.target.value === 'es' ? 'es' : 'en';
+    tpl.settings.lang = to;
+    try { localStorage.setItem(LANG_KEY, to); } catch (err) { /* private mode */ }
+    translateDefaults(tpl, from, to);
+    renderAll();
+    return;
+  }
+  if (e.target.id === 'showheader') { tpl.settings.showHeader = e.target.checked; renderPreview(); }
+  if (e.target.id === 'showtag') { tpl.settings.showTag = e.target.checked; renderPreview(); }
+  if (e.target.id === 'tagalign') { tpl.settings.tagAlign = e.target.value; renderPreview(); }
+  if (e.target.id === 'logoalign') { tpl.settings.logoAlign = e.target.value; renderPreview(); }
+  if (e.target.id === 'aligncenter') { tpl.settings.align = e.target.checked ? 'center' : 'left'; renderPreview(); }
+  if (e.target.dataset.bid && e.target.tagName === 'SELECT') {
+    const b = tpl.blocks.find(x => x.id === e.target.dataset.bid);
+    b.values[e.target.dataset.key] = e.target.value;
+    renderCanvas(); renderPreview();   // re-render: showIf fields may appear/disappear
+  }
+});
+
+/* ---------------- drag to reorder ---------------- */
+let dragId = null;
+
+function clearDropMarks() {
+  $$('.bcard').forEach(c => c.classList.remove('dropabove', 'dropbelow', 'dragging'));
+}
+
+/* Where would a drop land, relative to the card under the cursor? */
+function dropSide(card, clientY) {
+  const r = card.getBoundingClientRect();
+  return clientY < r.top + r.height / 2 ? 'above' : 'below';
+}
+
+function bindDrag() {
+  const list = $('#blocklist');
+
+  list.addEventListener('dragstart', (e) => {
+    const grip = e.target.closest('[data-grip]');
+    if (!grip) { e.preventDefault(); return; }
+    dragId = grip.dataset.grip;
+    const card = grip.closest('.bcard');
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragId);   // Firefox needs a payload
+    if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(card, 20, 18);
+  });
+
+  list.addEventListener('dragover', (e) => {
+    if (!dragId) return;
+    const card = e.target.closest('.bcard');
+    if (!card || card.dataset.sel === dragId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const side = dropSide(card, e.clientY);
+    // never allow a drop above the pinned announcement bar
+    const isPinned = card.classList.contains('pin');
+    $$('.bcard').forEach(c => c.classList.remove('dropabove', 'dropbelow'));
+    card.classList.add(isPinned ? 'dropbelow' : (side === 'above' ? 'dropabove' : 'dropbelow'));
+  });
+
+  list.addEventListener('drop', (e) => {
+    if (!dragId) return;
+    e.preventDefault();
+    const card = e.target.closest('.bcard');
+    if (!card || card.dataset.sel === dragId) { clearDropMarks(); dragId = null; return; }
+    const before = !card.classList.contains('pin') && dropSide(card, e.clientY) === 'above';
+    moveBlock(dragId, card.dataset.sel, before);
+    dragId = null;
+    renderCanvas(); renderPreview();
+  });
+
+  list.addEventListener('dragend', () => { clearDropMarks(); dragId = null; });
+  list.addEventListener('dragleave', (e) => {
+    if (!e.relatedTarget || !list.contains(e.relatedTarget)) clearDropMarks();
+  });
+}
+
+function moveBlock(srcId, targetId, before) {
+  const from = tpl.blocks.findIndex(b => b.id === srcId);
+  if (from < 0) return;
+  const [blk] = tpl.blocks.splice(from, 1);
+  let to = tpl.blocks.findIndex(b => b.id === targetId);
+  if (to < 0) to = tpl.blocks.length; else if (!before) to += 1;
+  if (tpl.blocks[0] && tpl.blocks[0].type === 'shipbar') to = Math.max(to, 1);
+  tpl.blocks.splice(to, 0, blk);
+}
+
+/* toolbar */
+function bindToolbar() {
+  $('#new-drop').onclick = () => { tpl = starterDrop(curLang()); selected = null; renderAll(); refreshSaved(); };
+  $('#new-sale').onclick = () => { tpl = starterSale(curLang()); selected = null; renderAll(); refreshSaved(); };
+  $('#new-blank').onclick = () => { tpl = starterBlank(curLang()); selected = null; renderAll(); refreshSaved(); };
+
+  $('#save').onclick = async () => {
+    try { await Store.save(JSON.parse(JSON.stringify(tpl))); await refreshSaved(); toast('Saved to ' + Store.mode); }
+    catch (e) { toast(e.message, true); }
+  };
+
+  $('#copy').onclick = async () => {
+    const body = buildBody(tpl);
+    const left = lint(tpl).length;
+    const msg = left ? 'Liquid copied — ' + left + ' thing' + (left > 1 ? 's' : '') + ' still to fix before sending'
+                     : 'Liquid copied — paste into Shopify Messaging';
+    try { await navigator.clipboard.writeText(body); toast(msg, !!left); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = body; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); ta.remove(); toast(msg, !!left);
+    }
+  };
+
+  $('#dl').onclick = () => download((tpl.name || 'email').replace(/\W+/g, '-').toLowerCase() + '.liquid', buildBody(tpl));
+  $('#dlhtml').onclick = () => download((tpl.name || 'email').replace(/\W+/g, '-').toLowerCase() + '.html', buildFull(tpl));
+  $('#dljson').onclick = () => download((tpl.name || 'email').replace(/\W+/g, '-').toLowerCase() + '.json', JSON.stringify(tpl, null, 2));
+
+  $$('.vtab').forEach(b => b.onclick = () => {
+    $$('.vtab').forEach(x => x.classList.remove('on')); b.classList.add('on');
+    const v = b.dataset.view;
+    $('#previewwrap').style.display = v === 'code' ? 'none' : 'flex';
+    $('#codewrap').style.display = v === 'code' ? 'block' : 'none';
+    $('#frame').style.maxWidth = v === 'mobile' ? '390px' : '100%';
+  });
+
+  $('#howto').onclick = () => $('#howmodal').classList.add('on');
+  $('#how-close').onclick = () => $('#howmodal').classList.remove('on');
+
+  $('#settings').onclick = () => {
+    const c = Store.cfg() || { url: '', key: '' };
+    $('#sb-url').value = c.url || ''; $('#sb-key').value = c.key || '';
+    $('#modal').classList.add('on');
+  };
+  $('#modal-close').onclick = () => $('#modal').classList.remove('on');
+  $('#sb-save').onclick = () => {
+    const url = $('#sb-url').value.trim().replace(/\/$/, ''), key = $('#sb-key').value.trim();
+    Store.setCfg(url && key ? { url, key } : null);
+    $('#modal').classList.remove('on'); refreshSaved();
+    toast(url && key ? 'Connected to Supabase' : 'Using local storage');
+  };
+  $('#sb-clear').onclick = () => { $('#sb-url').value = ''; $('#sb-key').value = ''; };
+}
+
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+  toast('Downloaded ' + name);
+}
+
+/* ---------------- boot ---------------- */
+$('#brandmark').innerHTML = BRAND.logo
+  ? '<img src="' + BRAND.logo + '" alt="">'
+  : '<span class="mark">BZ</span>';
+renderPalette();
+bindToolbar();
+bindDrag();
+tpl = starterDrop(curLang());
+renderAll();
+refreshSaved();
+
+</script>
+</body>
+</html>
