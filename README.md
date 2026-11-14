@@ -51,11 +51,13 @@ in UNDERGOLD × BAEZ it is restyled to the guide (capitals, Acumin Pro, square,
 white app button, dark-green outlines) and kept neutral so the registration
 button stays the only green one. Links and labels live in the `SOCIALS` object.
 
-**Icons.** They load from Shopify Files as `bz-email-<name>.png` — eight files:
-`apple-black`, `instagram-white`, `tiktok-white`, `threads-white`,
-`facebook-white`, `mail-white`, `ig-channel-white`, `whatsapp-white`. The tool
-tries to load each one and warns when any is missing; `Icons on the socials
-buttons` turns them off, and the footer then goes out as centred text buttons.
+**Icons.** They load from Shopify Files as `bz-email-<name>.png` — eight files
+(72×72, transparent): `apple-black`, `instagram-white`, `tiktok-white`,
+`threads-white`, `facebook-white`, `mail-white`, `ig-channel-white`,
+`whatsapp-white`. The exact `?v=` of each upload is in `SOCIALS.iconV`; if an
+icon is re-uploaded, put its new `?v=` there. The tool tries to load each one
+and warns when any is missing; `Icons on the socials buttons` turns them off,
+and the footer then goes out as centred text buttons.
 
 The old **Footer Grid** block is still in the palette but no longer part of the
 starters.

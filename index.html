@@ -1113,9 +1113,15 @@ function translateDefaults(tpl, from, to) {
    The "after sign-up" block from baezonline.com/pages/subscribe, as a standard
    footer under the card. Language follows the email. In the BAEZ look the
    markup is that block exactly; other looks restyle it through the soc* tokens.
-   Icons are bz-email-<name>.png in Shopify Files. */
+   Icons are bz-email-<name>.png in Shopify Files; iconV is the ?v= each file was
+   uploaded with (re-uploading an icon gives it a new one — update it here). */
 const SOCIALS = {
   icons: 'https://cdn.shopify.com/s/files/1/0225/9399/4827/files/bz-email-',
+  iconV: {
+    'apple-black': '1794628139', 'instagram-white': '1794628139', 'tiktok-white': '1794628139',
+    'threads-white': '1794628139', 'facebook-white': '1794628140', 'mail-white': '1794628139',
+    'ig-channel-white': '1794628140', 'whatsapp-white': '1794628139'
+  },
   follow: U('FOLLOW US', 'SÍGUENOS'),
   channelsLabel: U('JOIN OUR CHANNELS', 'ÚNETE A NUESTROS CANALES'),
   app: { url: 'https://apps.apple.com/us/app/baez/id6758910768', icon: 'apple-black', text: U('Download BAEZ', 'Descarga BAEZ') },
@@ -1136,6 +1142,7 @@ const SOCIAL_ICON_NAMES = Array.from(new Set(
   [SOCIALS.app, SOCIALS.contact].concat(SOCIALS.links, SOCIALS.channels).map(o => o.icon)));
 /* Filled in by the app, which tries to load each icon: names that are not on Shopify Files. */
 const ICON_STATE = { checked: false, missing: [] };
+const iconUrl = (name) => SOCIALS.icons + name + '.png' + (SOCIALS.iconV[name] ? '?v=' + SOCIALS.iconV[name] : '');
 
 function renderSocials(s, c) {
   if (s.showSocials !== true) return '';
@@ -1145,7 +1152,7 @@ function renderSocials(s, c) {
   const label = (t, pad) =>
     '<tr><td colspan="2" style="padding:' + pad + ';text-align:center;font-family:' + F + ';font-size:12px;font-weight:600;letter-spacing:2px;color:' + TK.socLabel + ';">' + say(t) + '</td></tr>';
   const ico = (name, size, css) => !icons ? '' :
-    '<img src="' + SOCIALS.icons + name + '.png" width="' + size + '" height="' + size + '" alt="" style="' + css + '">';
+    '<img src="' + iconUrl(name) + '" width="' + size + '" height="' + size + '" alt="" style="' + css + '">';
   /* primary = the white app button; wide = a full-width row (bolder, centred).
      Without icons every label is centred. */
   const btn = (o, primary, wide) => {
@@ -1590,7 +1597,7 @@ function probeIcons() {
     const im = new Image();
     im.onload = done;
     im.onerror = () => { bad.push(name); done(); };
-    im.src = SOCIALS.icons + name + '.png?probe=' + Date.now();
+    im.src = iconUrl(name);
   });
 }
 
