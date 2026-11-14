@@ -172,6 +172,8 @@
   <button class="btn" id="dl">.liquid</button>
   <button class="btn" id="dlhtml">.html</button>
   <button class="btn" id="dljson">.json</button>
+  <button class="btn" id="import" title="Load a template from a .json file exported here">Import</button>
+  <input type="file" id="importfile" accept=".json,application/json" style="display:none">
   <button class="btn" id="save">Save</button>
   <button class="btn pri" id="copy">Copy Liquid</button>
 </div>
@@ -319,6 +321,7 @@ const TK = {
   btnBorder: '#3f3f46',
   cardBorder: '',
   noteLead: '#999',            // bold lead-in of the pre-order fine print
+  lead: '#fff',                // emphasised line of a Stacked Rows pair
   width: 520
 };
 const TK_BASE = Object.assign({}, TK);
@@ -355,7 +358,7 @@ const THEMES = {
       accent: '#39FF14', accentGlow: 'text-shadow:0 0 12px rgba(57,255,20,.6);',
       tagColor: '#65C128', statusWeight: 400,
       ctaBg: '#65C128', ctaText: '#000', ctaGlow: 'box-shadow:0 0 24px rgba(57,255,20,.4);',
-      btnBorder: '#65C128', noteLead: '#F1F1F1'
+      btnBorder: '#65C128', noteLead: '#F1F1F1', lead: '#65C128'
     }
   }
 };
@@ -724,6 +727,40 @@ const BLOCKS = [
   }
 },
 {
+  id: 'stack',
+  name: 'Stacked Rows',
+  group: 'Content',
+  hint: 'Centred two-line pairs — dates and what happens on them, key facts. The free-form version of Drop Details.',
+  fields: [
+    { key: 'label', label: 'Section label (optional)', type: 'text', def: '' },
+    { key: 'rows', label: 'Rows', type: 'list', sub: [
+        { key: 'k', label: 'Top line', type: 'text', def: L('Friday, November 20', 'Viernes 20 de noviembre') },
+        { key: 'v', label: 'Bottom line', type: 'text', def: L('What happens', 'Qué pasa ese día') },
+        { key: 'href', label: 'Bottom line link (optional)', type: 'url', def: '' }
+      ], def: [
+        { k: L('Friday, November 20', 'Viernes 20 de noviembre'), v: L('What happens', 'Qué pasa ese día'), href: '' },
+        { k: L('Saturday, November 21', 'Sábado 21 de noviembre'), v: L('What happens', 'Qué pasa ese día'), href: '' }
+      ]
+    },
+    { key: 'lead', label: 'Emphasise', type: 'select', options: ['Top line', 'Bottom line'], def: 'Top line' }
+  ],
+  render: (v) => {
+    const topLead = v.lead !== 'Bottom line';
+    const big = 'font-size:14px;color:' + TK.lead + ';font-weight:700;line-height:1.4;';
+    const small = 'font-size:12px;color:' + TK.body + ';line-height:1.6;';
+    const rows = (v.rows || []).filter(x => x && (x.k || x.v)).map((x, i) => {
+      const gap = i === 0 ? '0' : '16px';
+      const top = x.k ? '<div style="' + (topLead ? big : small) + 'margin-top:' + gap + ';">' + esc(x.k) + '</div>' : '';
+      let bot = x.v ? esc(x.v) : '';
+      if (bot && x.href) bot = '<a href="' + esc(x.href) + '" style="color:' + TK.link + ';text-decoration:underline;">' + bot + '</a>';
+      if (bot) bot = '<div style="' + (topLead ? small : big) + 'margin-top:' + (x.k ? '3px' : gap) + ';">' + bot + '</div>';
+      return top + bot;
+    }).join('');
+    return row((v.label ? '<div style="font-size:11px;color:' + TK.muted + ';font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">' + esc(v.label) + '</div>' : '') +
+      rows, 'padding:20px 0 4px;', 'center');
+  }
+},
+{
   id: 'divider',
   name: 'Divider',
   group: 'Content',
@@ -748,8 +785,8 @@ const BLOCKS = [
   hint: 'Full-width hero or lifestyle shot. Host it on Shopify Files — no local files.',
   fields: [
     { key: 'src', label: 'Image URL', type: 'url', def: '' },
-    { key: 'scale', label: 'Size', type: 'range', min: 40, max: 100, step: 1, unit: '%', def: 100,
-      help: 'Shrinks only — email can’t zoom in. To make the subject bigger, re-crop the source image.' },
+    { key: 'scale', label: 'Size', type: 'range', min: 20, max: 100, step: 1, unit: '%', def: 100,
+      help: 'Shrinks only — email can’t zoom in. To make the subject bigger, re-crop the source image. Logos usually sit well at 25–45%.' },
     { key: 'alt', label: 'Alt text', type: 'text', def: BRAND.name },
     { key: 'href', label: 'Links to (optional)', type: 'url', def: BRAND.shopUrl },
     { key: 'caption', label: 'Caption (optional)', type: 'text', def: '' }
@@ -1286,6 +1323,25 @@ function starterBlank(lang, theme) {
   };
 }
 
+/* Bring a template from a .json file (or an older save) up to the current shape:
+   known blocks only, every field present, language and look valid. */
+function normalizeTemplate(t) {
+  if (!t || !Array.isArray(t.blocks)) throw new Error('not an Email Creator template');
+  const s = Object.assign(baseSettings('en', 'baez'), t.settings || {});
+  s.lang = s.lang === 'es' ? 'es' : 'en';
+  s.theme = themeKey(s);
+  return {
+    id: (typeof t.id === 'string' && t.id) ? t.id : uid(),
+    name: String(t.name || 'Imported Email'),
+    kind: String(t.kind || 'custom'),
+    settings: s,
+    blocks: t.blocks.filter(b => b && BLOCK_BY_ID[b.type]).map(b => {
+      const base = mkBlock(b.type, {}, s.lang, s.theme);
+      return { id: bid(), type: b.type, values: Object.assign(base.values, b.values || {}) };
+    })
+  };
+}
+
 /* ---------------- app state ---------------- */
 let tpl = null;
 let selected = null;
@@ -1684,6 +1740,18 @@ function bindToolbar() {
   $('#dl').onclick = () => download((tpl.name || 'email').replace(/\W+/g, '-').toLowerCase() + '.liquid', buildBody(tpl));
   $('#dlhtml').onclick = () => download((tpl.name || 'email').replace(/\W+/g, '-').toLowerCase() + '.html', buildFull(tpl));
   $('#dljson').onclick = () => download((tpl.name || 'email').replace(/\W+/g, '-').toLowerCase() + '.json', JSON.stringify(tpl, null, 2));
+
+  $('#import').onclick = () => $('#importfile').click();
+  $('#importfile').onchange = async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      tpl = normalizeTemplate(JSON.parse(await f.text()));
+      selected = null; renderAll(); refreshSaved();
+      toast('Imported “' + tpl.name + '” — hit Save to keep it here');
+    } catch (err) { toast('Import failed: ' + err.message, true); }
+  };
 
   $$('.vtab').forEach(b => b.onclick = () => {
     $$('.vtab').forEach(x => x.classList.remove('on')); b.classList.add('on');

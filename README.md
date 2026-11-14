@@ -35,6 +35,18 @@ URLs, logo URL and the accent colour. A link left empty is simply left out of
 the email (for example the Instagram and Subscribe footer buttons), so nothing
 dead ships. This repo is public — URLs only, never keys.
 
+## Blocks added here
+
+- **Stacked Rows** — centred two-line pairs (a date and what happens on it, key
+  facts). The free-form version of Drop Details.
+- **Image** — the Size slider goes down to 20% so logos can sit small.
+
+## Import / export
+
+`.json` downloads the open template; **Import** loads one back (on any machine,
+no Supabase needed). Unknown blocks are dropped and missing fields filled in.
+Importing does not save — hit Save to keep it in this browser.
+
 ## Brand looks
 
 `Brand look` in the Email panel restyles the same blocks; the markup and the
